@@ -1,19 +1,5 @@
-﻿#Requires -RunAsAdministrator
+#Requires -RunAsAdministrator
 <#
-	.SYNOPSIS
-		- Legitimately converts Windows 10 Home to Windows 10 Pro for Workstations.
-		- Does NOT perform any actions that are against Microsoft's Terms of Service or in any ways illegal.
-		- Microsoft offers a free Media Creation Tool for v1709 that will download their Fall Creator's Update v1709.
-		- There are other legitimate 3rd party sources where this media can also be obtained.
-	
-	.DESCRIPTION
-		- If an Install.WIM is supplied, it will copy it to a temporary directory.
-		- If an ISO is supplied, it will mount the ISO, copy the Install.WIM to a temporary directory, then dismount the ISO.
-		- Changes the WIM's Edition ID to Windows 10 Pro for Workstations.
-		- Converts the WIM's default XML values to Windows 10 Pro for Workstations specific values.
-		- Generates a Windows 10 Pro for Workstations EI.CFG.
-		- Exports the new Windows 10 Pro for Workstations WIM, EI.CFG and XML info to the user's desktop.
-	
 	.PARAMETER SourcePath
 		The path to a Windows Installation ISO or an Install.WIM.
 	
@@ -256,8 +242,8 @@ If ($ConversionComplete -eq $true)
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUK9HSZXxqmp3+7cGXTO44Oml1
-# /WigggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUeo+Ji+oQTQB5B3cjVi89fbX0
+# LTqgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
 # MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
 # NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
 # Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -295,15 +281,15 @@ If ($ConversionComplete -eq $true)
 # qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
 # ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
 # MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBS6k5rgmJS3vBooRwCvfNfQXm3gMjCB
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBS0INRlE6yz8hfnfYJz/p52oUSjTzCB
 # rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
 # SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
 # bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
 # dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# O9fcf7fQI76V41NHw9hwTrFSbJyc4ljAr3lCFvkWx0eqE5POWC6Y1BXobdQK9+0Q
-# w3VRVCCUOk0iKXUdi+pBLLUfTuM1tgDgmBHQSxcaNsF0xF/Bkcay5ZOmIqlddHQa
-# fxNkVnFAbgH1Em7q77BIacI45L3Prwc2IGfYZzrLSov7a2W0Bira75r/uoaTzc1w
-# Cw3OZ3aoVpDnD1YAek9K8fvj0FvJSUioBsqyNXj4NPk4eCA1+VSljj8qo3Gv3aRJ
-# eh9GcX5Cy00YM+rsqrR8tg8tPPda4xyvAnZj2Ou2TS9er44jTHKd9/EJnkqitqhx
-# qSPIB/0kFgq2x9OfYeFaOA==
+# ajkAGXQsrwYgrzQOSlzNuGA0OCt1LkO7PhlTmyumZIM2iZFwgA8nxswMh+YwTdpa
+# CZSZ2m3AU/d3+/2enhU/VcSYyo9kizRDW3AVG3h5bn0rwPGUOi/vh0cCA3Ffc9PA
+# KpOA5cNK9cc0YOq4sA6DUgwzNHWDwNv6zIWfiX5FroTpUVhft6ZkrH1Lmg1TvqbI
+# HdDeiE7c6jCbMoNkbfVU3W5engZSdOPVq02a1UpQ6+hsr+vDuWDLUWK9V/WJx2PU
+# x2saSWdUE2lMtftFPFilOHg0Hi/9YVcxnljjJzQxJV7v9DVtZXk71vCgWTL2SVkW
+# tE9Z9V4VhjQ49olWVSmazQ==
 # SIG # End signature block
