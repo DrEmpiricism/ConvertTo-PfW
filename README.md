@@ -1,6 +1,3 @@
-# ConvertTo-PfW
-Windows 10 Home to Windows 10 Pro for Workstations full conversion script. (Fall Creator's Update v1709 only)
-
 # Overview
 - Legitimately converts Windows 10 Home to Windows 10 Pro for Workstations.
 - Does NOT perform any actions that are against Microsoft's Terms of Service or in any ways illegal.
@@ -18,4 +15,5 @@ Windows 10 Home to Windows 10 Pro for Workstations full conversion script. (Fall
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
+- ImageX.exe
 - Administrator permissions (to run PowerShell elevated).
