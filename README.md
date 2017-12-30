@@ -17,3 +17,7 @@
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
 - ImageX.exe
 - Administrator permissions (to run PowerShell elevated).
+
+# Examples
+- .\ConvertTo-PfW.ps1 -SourcePath "D:\install.wim"
+- .\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso"
