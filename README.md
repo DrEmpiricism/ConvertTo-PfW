@@ -21,3 +21,6 @@
 # Examples
 - .\ConvertTo-PfW.ps1 -SourcePath "D:\install.wim"
 - .\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso"
+
+# Notes
+- If the ImageX.exe is not detected in the script's root directory, the script will attempt to download the ImageX encoded Base64 file from this repository to use.
