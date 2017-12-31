@@ -10,7 +10,7 @@
 	.NOTES
 		- It does not matter if the source image contains multiple indexes or a single Home index.
 		- The script's processes run silently, though it does output what it's doing to the console using proper verbosity.
-		- If ImageX is not detected in the script's root directory, the script will attempt to download it from the GitHub repository.
+		- If ImageX is not detected in the script's root directory, the script will attempt to download its encoded content from the GitHub repository.
 	
 	.NOTES
 		===========================================================================
@@ -18,8 +18,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        1.8
-		Last updated:	12/30/2017
+		Version:        1.9
+		Last updated:	12/31/2017
 		===========================================================================
 #>
 Param
@@ -77,12 +77,14 @@ If (Test-Path -Path "$PSScriptRoot\imagex.exe")
 }
 ElseIf ((!(Test-Path -Path "$PSScriptRoot\imagex.exe")) -and ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true))
 {
+	Write-Verbose "ImageX was not found in the script's root directory. Getting its encoded content from GitHub." -Verbose
 	(Invoke-WebRequest https://raw.githubusercontent.com/DrEmpiricism/ConvertTo-PfW/master/Encoded/imagex.txt).Content | Set-Content -Path $env:TEMP\imagex.txt
 	$FileContent = Get-Content -Path $env:TEMP\imagex.txt
 	$FileContentDecoded = [System.Convert]::FromBase64String($FileContent)
 	Set-Content -Path $env:TEMP\imagex.exe -Value $FileContentDecoded -Encoding Byte
 	Remove-Item -Path $env:TEMP\imagex.txt -Force
 	$Error.Clear()
+	Clear-Host
 }
 Else
 {
@@ -249,8 +251,8 @@ If ($ConversionComplete -eq $true)
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUT9jaV9ons3IXy9UKQLMElgPB
-# DSGgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCjIL+cejTNcuQWVKxkm+J+GK
+# 9RegggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
 # MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
 # NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
 # Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -288,15 +290,15 @@ If ($ConversionComplete -eq $true)
 # qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
 # ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
 # MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBR0A0CdP9Dw7L72oKe+pKMouSqh7jCB
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRw7T/5yKILcFvzX4vxPISIkQPJODCB
 # rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
 # SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
 # bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
 # dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# Q4Imuiby9vfLzaSwKldPsya8Lju/gyGWARRT4TvnPWogQXg9A3aDlHSsqcEW7u3D
-# kLWDLJpR+0dzPpuTR1O2P+B7MF429WxA5/rBQh5d+DsEkJSmlKLjDRkUrRgn+Nzu
-# S/CL3h6NYuO0pumJiSmk8cUFwNxVlfE5Ivm8FfS1gsWXDw4GVT4UW+EjEAFh1lN6
-# kDb6hxmOQhhCwrb3CwjnuhcRcvDd0dooy9VNQgvEncs0394Le+PoYvrgDVVx9efB
-# 4jwQP7pxvJns3TLB4JXgdedEkCboQZZl1rkfprnazGh8X47CRuM3ot1nCp9hfGtL
-# 8ASKKqnwBYEuvsTeGEnehg==
+# Oy/jiQq55CmHUUFD1t0vN4b6lrpWhyi/cF4lwYpQhjYWjS/AqRO2JqROui/Jz2gq
+# sBpZkB92IEmQTW3hWe/09GCVs9V+FVwNQJT4LVgJTAAvQVapZ6g8P6cHKi8XyieF
+# m6EZbtSNxtq5yUQDVCfHl5ivAGmV6iZmdmXABzt1q/Cpyu/KdDnVORClrfqHCzmb
+# dpwprZnhrvAiT+3yFK4LjGkx7mHG0boZDb/6LfKv3YpUUrSuwe9F/YjzlYRtjcvC
+# IvEXNGaq4t9/YHCkxfIBLSnT6Grb+64XQVhdvrSQHbW7hONXZM2zXSEGLckKhhOs
+# bjpdhSioAg9cpAIEn1Kv/A==
 # SIG # End signature block
