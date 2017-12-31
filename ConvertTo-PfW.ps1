@@ -78,6 +78,7 @@ If (Test-Path -Path "$PSScriptRoot\imagex.exe")
 ElseIf ((!(Test-Path -Path "$PSScriptRoot\imagex.exe")) -and ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true))
 {
 	Write-Verbose "ImageX was not found in the script's root directory. Getting its encoded content from GitHub." -Verbose
+	Start-Sleep 3
 	(Invoke-WebRequest https://raw.githubusercontent.com/DrEmpiricism/ConvertTo-PfW/master/Encoded/imagex.txt).Content | Set-Content -Path $env:TEMP\imagex.txt
 	$FileContent = Get-Content -Path $env:TEMP\imagex.txt
 	$FileContentDecoded = [System.Convert]::FromBase64String($FileContent)
