@@ -13,7 +13,7 @@ IF %ERRORLEVEL% NEQ 0 (
 ) ELSE (
     ECHO Running as Administrator.
     TIMEOUT /T 2 >NUL
-    PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File .\Optimize-Offline.ps1 -SourcePath "%SourcePath%"
+    PowerShell.exe -NoProfile -ExecutionPolicy Bypass -File .\ConvertTo-PfW.ps1 -SourcePath "%SourcePath%"
 )
 PAUSE
 EXIT
