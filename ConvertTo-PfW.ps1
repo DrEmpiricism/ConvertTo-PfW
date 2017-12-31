@@ -195,7 +195,6 @@ Try
 	Write-Output ''
 	Write-Verbose "Converting $HomeImage to Windows 10 Pro for Workstations." -Verbose
 	Start-Process -Filepath CMD.exe -WorkingDirectory $ImageFolder -ArgumentList ('/c imagex /Info install.wim 1 "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" /Flags ProfessionalWorkstation') -Verb runas -WindowStyle Hidden -Wait -ErrorAction Stop
-	Start-Process -Filepath CMD.exe -WorkingDirectory $ImageFolder -ArgumentList ('/c imagex /Info install.wim 1 /Check /XML > ProfessionalWorkstation.xml') -Verb runas -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
 	Write-Output ''
 	Write-Output "Conversion successful."
 	$ConversionComplete = $true
@@ -237,7 +236,6 @@ If ($ConversionComplete -eq $true)
 	[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
 	$SaveFolder = Create-SaveDirectory
 	[void](Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force)
-	[void](Move-Item -Path $ImageFolder\*.xml -Destination $SaveFolder -Force)
 	[void](Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force)
 	[void](Remove-Item $TempFolder -Recurse -Force)
 	[void](Remove-Item $ImageFolder -Recurse -Force)
@@ -252,8 +250,8 @@ If ($ConversionComplete -eq $true)
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUCjIL+cejTNcuQWVKxkm+J+GK
-# 9RegggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUHkTDGhul+CyE5qUER5wLspQD
+# +9mgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
 # MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
 # NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
 # Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -291,15 +289,15 @@ If ($ConversionComplete -eq $true)
 # qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
 # ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
 # MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRw7T/5yKILcFvzX4vxPISIkQPJODCB
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBTa7c9zPnbj3qepw3/7DOL157HIzzCB
 # rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
 # SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
 # bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
 # dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# Oy/jiQq55CmHUUFD1t0vN4b6lrpWhyi/cF4lwYpQhjYWjS/AqRO2JqROui/Jz2gq
-# sBpZkB92IEmQTW3hWe/09GCVs9V+FVwNQJT4LVgJTAAvQVapZ6g8P6cHKi8XyieF
-# m6EZbtSNxtq5yUQDVCfHl5ivAGmV6iZmdmXABzt1q/Cpyu/KdDnVORClrfqHCzmb
-# dpwprZnhrvAiT+3yFK4LjGkx7mHG0boZDb/6LfKv3YpUUrSuwe9F/YjzlYRtjcvC
-# IvEXNGaq4t9/YHCkxfIBLSnT6Grb+64XQVhdvrSQHbW7hONXZM2zXSEGLckKhhOs
-# bjpdhSioAg9cpAIEn1Kv/A==
+# ed14K0/we/W6sTMIzBcCRp6hYrlO1mcnh5zNeXexbFPe4MZ+YHARzevgPPGPMbEh
+# y1rBqzox+YxD1LvjeUVZ5pJqD+H8GswcNkfsruRkKeNW7zSp7MgEvkDGaJIf0DCZ
+# OgnVBGcEoQCia10hRPPUwhO5R44C7+PEry/zugBFCzi+UGbDhTgwFPMczhYaIDm1
+# X+MCNoPvCfBV1G4ikHUtyyB335/W2JMeaKwq19k4PsFHVaofPQixIXUaTTfcpEIT
+# 9ya1oQN/MLoVonJVfjThjdAeZkCiLhjfShQHwvrRlVjhsmIrbRqj49pGSA3pw/ri
+# fuGH0aM4IAG65xXudI9J9A==
 # SIG # End signature block
