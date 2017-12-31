@@ -10,8 +10,7 @@
 	.NOTES
 		- It does not matter if the source image contains multiple indexes or a single Home index.
 		- The script's processes run silently, though it does output what it's doing to the console using proper verbosity.
-		- Make sure to keep the imagex.exe in the same directory the script is in, as it's required for a full conversion.
-		- ImageX is an official Microsoft tool that has been discontinued.
+		- If ImageX is not detected in the script's root directory, the script will attempt to download it from the GitHub repository.
 	
 	.NOTES
 		===========================================================================
@@ -76,9 +75,18 @@ If (Test-Path -Path "$PSScriptRoot\imagex.exe")
 	[void](Copy-Item -Path "$PSScriptRoot\imagex.exe" -Destination $env:TEMP -Force)
 	$Error.Clear()
 }
+ElseIf ((!(Test-Path -Path "$PSScriptRoot\imagex.exe")) -and ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true))
+{
+	(Invoke-WebRequest https://raw.githubusercontent.com/DrEmpiricism/ConvertTo-PfW/master/Encoded/imagex.txt).Content | Set-Content -Path $env:TEMP\imagex.txt
+	$FileContent = Get-Content -Path $env:TEMP\imagex.txt
+	$FileContentDecoded = [System.Convert]::FromBase64String($FileContent)
+	Set-Content -Path $env:TEMP\imagex.exe -Value $FileContentDecoded -Encoding Byte
+	Remove-Item -Path $env:TEMP\imagex.txt -Force
+	$Error.Clear()
+}
 Else
 {
-	Throw "ImageX was not found in the script's root directory."
+	Throw "ImageX could not be found."
 }
 
 If (([IO.FileInfo]$SourcePath).Extension -like ".ISO")
@@ -241,8 +249,8 @@ If ($ConversionComplete -eq $true)
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUGp6zI1q64dCyZLV7tWX2nmON
-# 7/mgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUT9jaV9ons3IXy9UKQLMElgPB
+# DSGgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
 # MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
 # NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
 # Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -280,15 +288,15 @@ If ($ConversionComplete -eq $true)
 # qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
 # ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
 # MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBReEhtFq95VY7b/yMI1i2fBQDWdYTCB
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBR0A0CdP9Dw7L72oKe+pKMouSqh7jCB
 # rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
 # SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
 # bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
 # dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# t+M05mGCoTw05hmZvUpr/6zm7soIkKtqpvDueR1SnzwmIBbbrWC2tlRv6Bs7OvZ0
-# w8IuFrwgd7U7BMARKRGsSl4prz9tClvCEawtGcwCvDmmX8MCbMsaJpyKMM4VVdHT
-# fZEdVLKt+E5ll1GIvZaTeKYEc4g5gfxR3jreZgbC4F3bSucT7tP1eSTBkcIMKA1K
-# Y2CTmeIcmLXoe9i+ipVERMErzYDPx4Iy/K7CXMJtwIqC8K0PY4UKOyd/e/jDFvpm
-# BLBu8TQKkRIvqeuSob0cTL9Emjr88g+BGJTx030g4mcw+sT2CNvOYaqcAa82sblF
-# 7j6xTncyn2G5YTTDP1Ty8Q==
+# Q4Imuiby9vfLzaSwKldPsya8Lju/gyGWARRT4TvnPWogQXg9A3aDlHSsqcEW7u3D
+# kLWDLJpR+0dzPpuTR1O2P+B7MF429WxA5/rBQh5d+DsEkJSmlKLjDRkUrRgn+Nzu
+# S/CL3h6NYuO0pumJiSmk8cUFwNxVlfE5Ivm8FfS1gsWXDw4GVT4UW+EjEAFh1lN6
+# kDb6hxmOQhhCwrb3CwjnuhcRcvDd0dooy9VNQgvEncs0394Le+PoYvrgDVVx9efB
+# 4jwQP7pxvJns3TLB4JXgdedEkCboQZZl1rkfprnazGh8X47CRuM3ot1nCp9hfGtL
+# 8ASKKqnwBYEuvsTeGEnehg==
 # SIG # End signature block
