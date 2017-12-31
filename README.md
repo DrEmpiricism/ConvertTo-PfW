@@ -15,7 +15,7 @@
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
-- ImageX.exe
+- ImageX.exe in the script's root directory.
 - Administrator permissions (to run PowerShell elevated).
 
 # Examples
