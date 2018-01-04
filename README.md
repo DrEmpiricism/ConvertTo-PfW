@@ -5,7 +5,10 @@
 - There are other legitimate 3rd party sources where this media can also be obtained.
 
 # How to run it
-- Drag and drop an ISO or WIM file onto the ConvertTo-PfW.exe
+- Download the ConvertTo-PfW.exe.
+- Unblock the download.
+- Drag and drop an ISO or WIM file onto the ConvertTo-PfW.exe.
+- Let it run until completion.
 
 # How it works
 - If an Install.WIM is supplied, it will copy it to a temporary directory.
