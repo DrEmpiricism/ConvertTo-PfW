@@ -4,7 +4,10 @@
 - Microsoft offers a free Media Creation Tool for v1709 that will download their Fall Creator's Update v1709.
 - There are other legitimate 3rd party sources where this media can also be obtained.
 
-# How it Works
+# How to run it
+- Drag and drop an ISO or WIM file onto the ConvertTo-PfW.exe
+
+# How it works
 - If an Install.WIM is supplied, it will copy it to a temporary directory.
 - If an ISO is supplied, it will mount the ISO, copy the Install.WIM to a temporary directory, then dismount the ISO.
 - Detects the Windows 10 Home index image within the WIM.
@@ -15,12 +18,6 @@
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
-- ImageX.exe in the script's root directory.
-- Administrator permissions (to run PowerShell elevated).
-
-# Examples
-- .\ConvertTo-PfW.ps1 -SourcePath "D:\install.wim"
-- .\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso"
 
 # Notes
 - If the ImageX.exe is not detected in the script's root directory, the script will attempt to download the ImageX encoded Base64 file from this repository to use.
