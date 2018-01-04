@@ -12,7 +12,7 @@
 
 # How to run the script
 - Open an elevated PowerShell console and navigate to the root location of the ConvertTo-PfW.ps1
-- Execute the script by pointing it to the ISO/WIM file.
+- Execute the script by pointing it to the ISO/WIM file:
 -         .\ConvertTo-PfW.ps1 -SourcePath "Path to ISO or WIM file"
 - Or use the Run.cmd batch script to automatically call the script (must set the ISO/WIM file variable in the batch script first).
 
