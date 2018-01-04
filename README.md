@@ -23,4 +23,4 @@
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
 
 # Notes
-- If ImageX is not detected in the .exe's root directory, it will download the ImageX encoded Base64 file from this repository to use instead.
+- If ImageX or the Base64 encoded ImageX.txt file is not detected in the .exe's root directory, it will automatically download the Base64 encoded .txt file from this repository to use.
