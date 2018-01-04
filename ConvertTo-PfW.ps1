@@ -37,7 +37,7 @@ Param
 $Host.UI.RawUI.WindowTitle = "Converting image."
 $Host.UI.RawUI.BackgroundColor = "Black"; Clear-Host
 $ProgressPreference = "SilentlyContinue"
-$Desktop = "$HOME\Desktop"
+$Desktop = [Environment]::GetFolderPath("Desktop")
 
 #region Helper Functions
 Function Verify-Admin
