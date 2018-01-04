@@ -17,7 +17,7 @@
 - Changes the WIM's Edition ID to Windows 10 Pro for Workstations.
 - Converts the WIM's default XML values to Windows 10 Pro for Workstations specific values.
 - Generates a Windows 10 Pro for Workstations EI.CFG
-- Exports the new Windows 10 Pro for Workstations WIM, EI.CFG and XML info to the user's desktop.
+- Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop.
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
