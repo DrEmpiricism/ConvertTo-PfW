@@ -21,7 +21,3 @@
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
-- An active internet connection.
-
-# Notes
--  An active internet connection allows the executable to automatically download the Base64 encoded ImageX.txt file from this repository.
