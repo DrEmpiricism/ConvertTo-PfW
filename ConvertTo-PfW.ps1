@@ -8,7 +8,7 @@
 	.PARAMETER SourcePath
 		The path to a Windows Installation ISO or an Install.WIM.
 	
-	.PARAMETER SaveLocation
+	.PARAMETER SavePath
 		Specify an alternative save location for the converted image. The default save location is the Desktop.
 	
 	.EXAMPLE
