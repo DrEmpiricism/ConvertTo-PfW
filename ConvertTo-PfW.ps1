@@ -8,12 +8,15 @@
 	.PARAMETER SourcePath
 		The path to a Windows Installation ISO or an Install.WIM.
 	
+	.PARAMETER SaveLocation
+		Specify an alternative save location for the converted image. The default save location is the Desktop.
+	
 	.EXAMPLE
 		.\ConvertTo-PfW.ps1 -SourcePath "D:\install.wim"
-		.\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso"
+		.\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso" -SavePath "E:\Windows Images\Win10 PfW"
 	
 	.NOTES
-		- It does not matter if the source image contains multiple indexes or a single Home index.
+		It does not matter if the source image contains multiple indexes or a single Home index.
 	
 	.NOTES
 		===========================================================================
@@ -21,8 +24,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.0
-		Last updated:	01/03/2018
+		Version:        2.2
+		Last updated:	01/16/2018
 		===========================================================================
 #>
 Param
@@ -31,7 +34,11 @@ Param
 			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')]
 	[ValidateScript({ Test-Path $(Resolve-Path $_) })]
 	[Alias('ISO', 'WIM')]
-	[string]$SourcePath
+	[string]$SourcePath,
+	[Parameter(HelpMessage = 'Specify a different save location from default.')]
+	[ValidateScript({ Test-Path $(Resolve-Path $_) })]
+	[Alias('Save')]
+	[string]$SavePath
 )
 
 $Host.UI.RawUI.WindowTitle = "Converting image."
@@ -84,7 +91,21 @@ Function Create-MountDirectory
 
 Function Create-SaveDirectory
 {
-	New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
+	[CmdletBinding()]
+	Param ()
+	
+	If (!($SavePath))
+	{
+		New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
+	}
+	ElseIf (Test-Path -Path $SavePath -PathType Container)
+	{
+		New-Item -ItemType Directory -Path $SavePath\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
+	}
+	Else
+	{
+		New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
+	}
 }
 #endregion Helper Functions
 
@@ -157,7 +178,7 @@ ElseIf (([IO.FileInfo]$SourcePath).Extension -like ".WIM")
 	}
 	Else
 	{
-		Throw "$WIMPath does not contain valid Windows Installation media."
+		Throw "$WIMPath is not a resolvable path."
 	}
 }
 
@@ -285,8 +306,8 @@ If ($ConversionComplete -eq $true)
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+cevdvL8zYY6xYBAO+0FmqGE
-# GiugggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUk2nor+gylpv8r2gIv7Q05P4g
+# 3LagggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
 # MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
 # NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
 # Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
@@ -324,15 +345,15 @@ If ($ConversionComplete -eq $true)
 # qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
 # ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
 # MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBSkQNOVt7yoXsq7nNB1Zz1L7xlizTCB
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRO11pxC+dsXjGC0F+MtjY0GfJeCzCB
 # rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
 # SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
 # bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
 # dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# Q5cMrncGIVisTtTEEYluqC8fGz/a1YPaw5dLZ55AHE2lbcW698wRDcIsEn721fuZ
-# ng/+UHyMA3KNwegGkjR2b8d+8XtuxmCc1Zj23ado2qW+AQeETxfUfKS06pbY0tQw
-# SEVOJwKIfYMQhQY8hIoi/kxJw72BsizscYd7+Oo7i28XUgVp0KQEHWTUGV+rqdKr
-# DBfR7piKKYoA8NcHKk5YHqGbG7cVC0DxXBClbweFJ/wJVx6yfDvorXyzRVZwNsmN
-# Tj6TOImkYgI+snzJQteLizFkr4Z1mdzxC5AucOKVNCTzEAguIOW09r6ZS41ZprC1
-# ZDPPnXM1cjJOQdrUQmEHJg==
+# JkhKtFyilUd3qFzQOZgBH6wZbL+kJSedILvdCBJ3BfQKI98cNU+LBXZq01IDyTvx
+# WE70/uHM3w7ykfa3eV5f8xLFkh+3ZeZnSrMesuy9YN3j9elNWKnsS2WK5lGZQIfx
+# 0B4IzyhVEq8hYuntK2Xi4dvI9PLN0w+d61tk5ddlGgBk5wPjGiIDXsOL2n7wQW2A
+# Z5wFtDtyhFO2DgalpEnDnLo+dNZHAuX9jvUHBh+dABFuSNX9obIXHEhpOhRVKRqk
+# unl0d/Y6rALHn8AzrFLI4euyDp3vx3iRhU4s02pJTS5J2xQ5V/1k8yD09JKD0R8n
+# wzjPoagCPd39S4LoJ45u7A==
 # SIG # End signature block
