@@ -26,4 +26,4 @@
 - ImageX.exe in the root directory of the script, or the encoded ImageX.txt included in this repository.
 
 # Notes
-- If neither ImageX.exe nor the ImageX.txt encoded file are located in the root directory, the script will attempt to download the ImageX.txt encoded file from this repository to use.
+- If ImageX.exe nor the ImageX.txt encoded file are located in the root directory, the script will attempt to download the ImageX.txt encoded file from this repository to use.
