@@ -4,7 +4,7 @@
 - Microsoft offers a free Media Creation Tool for v1709 that will download their Fall Creator's Update v1709.
 - There are other legitimate 3rd party sources where this media can also be obtained.
 
-# How to run
+# How to run the executable
 - Download the ConvertTo-PfW.exe.
 - Unblock the download.
 - Drag and drop an ISO or WIM file onto the ConvertTo-PfW.exe
