@@ -21,6 +21,10 @@
 - Generates a Windows 10 Pro for Workstations EI.CFG
 - Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop.
 
+# How is the executable version different from the script version?
+- The executable uses C# code with a wrapper to natively access and convert the WIM file's default XML values to Windows 10 Pro for Workstations specific values.  As such, it does not require the ImageX.exe, or the ImageX.txt encoded file, to change the default values.
+- It's entirely drag and drop.
+
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
 - ImageX.exe in the root directory of the script, or the encoded ImageX.txt included in this repository.
