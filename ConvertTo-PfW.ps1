@@ -284,36 +284,34 @@ Retail
 	Start-Sleep 3
 }
 
-If ($ConversionComplete -eq $true)
+If ($ESD)
 {
-	If ($ESD)
-	{
-		Write-Output ''
-		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This will take a while." -Verbose
-		& [void](DISM.EXE /Export-Image /SourceImageFile:${ImageFile} /SourceIndex:${Index} /DestinationImageFile:${WorkFolder}\install.esd /Compress:recovery /CheckIntegrity)
-		$SaveFolder = Create-SaveDirectory
-		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
-		Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
-	}
-	Else
-	{
-		Write-Output ''
-		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations." -Verbose
-		[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
-		$SaveFolder = Create-SaveDirectory
-		Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
-		Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
-	}
-	Remove-Item $TempFolder -Recurse -Force
-	Remove-Item $ImageFolder -Recurse -Force
-	Remove-Item $MountFolder -Recurse -Force
-	Remove-Item $WorkFolder -Recurse -Force
+	Write-Output ''
+	Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This will take a while." -Verbose
+	Import-Module DISM
+	[void](DISM /Export-Image /SourceImageFile:$ImageFile /SourceIndex:$Index /DestinationImageFile:$WorkFolder\install.esd /Compress:Recovery /CheckIntegrity)
 	[void](Clear-WindowsCorruptMountPoint)
-	Write-Output ''
-	Write-Output "Windows 10 Pro for Workstations saved to $SaveFolder"
-	Start-Sleep 3
-	Write-Output ''
+	$SaveFolder = Create-SaveDirectory
+	Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
 }
+Else
+{
+	Write-Output ''
+	Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations." -Verbose
+	[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
+	[void](Clear-WindowsCorruptMountPoint)
+	$SaveFolder = Create-SaveDirectory
+	Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
+}
+Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+Remove-Item $TempFolder -Recurse -Force
+Remove-Item $ImageFolder -Recurse -Force
+Remove-Item $MountFolder -Recurse -Force
+Remove-Item $WorkFolder -Recurse -Force
+Write-Output ''
+Write-Output "Windows 10 Pro for Workstations saved to $SaveFolder"
+Start-Sleep 3
+Write-Output ''
 # SIG # Begin signature block
 # MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
