@@ -10,7 +10,7 @@
 -         .\ConvertTo-PfW.ps1 -SourcePath "Path to ISO or WIM file"
 - You can also supply a different final Install.WIM save location by using the parameter '-SavePath "Path to save location"'
 - By using the -ESD switch, the script will export and compress the saved image into an ESD file instead of the default WIM file.
-**Be aware that ESD compression can take quite a while to complete.**
+ **Be aware that ESD compression can take quite a while to complete and is also system intensive. If you are limited in time, or have an older device, it's probably better to stick with the default WIM file.**
 -         .\ConvertTo-PfW.ps1 -SourcePath "Path to ISO or WIM file" -SavePath "Path to save location" -ESD
 - Or use the Run.cmd batch script to automatically call the script (must set the ISO/WIM file variable in the batch script first).
 
