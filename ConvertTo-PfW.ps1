@@ -288,7 +288,6 @@ If ($ESD)
 {
 	Write-Output ''
 	Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This will take a while." -Verbose
-	Import-Module DISM
 	[void](DISM /Export-Image /SourceImageFile:$ImageFile /SourceIndex:$Index /DestinationImageFile:$WorkFolder\install.esd /Compress:Recovery /CheckIntegrity)
 	[void](Clear-WindowsCorruptMountPoint)
 	$SaveFolder = Create-SaveDirectory
