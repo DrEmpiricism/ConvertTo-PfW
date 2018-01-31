@@ -289,7 +289,7 @@ If ($ConversionComplete -eq $true)
 	If ($ESD)
 	{
 		Write-Output ''
-		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This can take a while; please be patient." -Verbose
+		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This will take a while." -Verbose
 		& [void](DISM.EXE /Export-Image /SourceImageFile:${ImageFile} /SourceIndex:${Index} /DestinationImageFile:${WorkFolder}\install.esd /Compress:recovery /CheckIntegrity)
 		$SaveFolder = Create-SaveDirectory
 		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
