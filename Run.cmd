@@ -3,6 +3,7 @@ CD /D "%~dp0"
 
 REM Paste the path to the ISO/WIM below, then run this script as an administrator.
 SET "SourcePath=E:\Windows 10\CCCOMA_X64FRE_EN-US_DV9.iso"
+SET "SavePath=E:\Windows 10 Images"
 
 NET SESSION >NUL 2>&1
 IF %ERRORLEVEL% NEQ 0 (
