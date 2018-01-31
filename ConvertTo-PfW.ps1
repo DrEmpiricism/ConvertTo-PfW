@@ -11,9 +11,12 @@
 	.PARAMETER SavePath
 		Specify an alternative save location for the converted image. The default save location is the Desktop.
 	
+	.PARAMETER ESD
+		Compresses the final image to an ESD file instead of a WIM file.
+	
 	.EXAMPLE
 		.\ConvertTo-PfW.ps1 -SourcePath "D:\install.wim"
-		.\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso" -SavePath "E:\Windows Images\Win10 PfW"
+		.\ConvertTo-PfW.ps1 -SourcePath "E:\Windows Images\Win10_1709_English_x64_ALL.iso" -SavePath "E:\Windows Images\Win10 PfW" -ESD
 	
 	.NOTES
 		It does not matter if the source image contains multiple indexes or a single Home index.
@@ -24,21 +27,17 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.2
-		Last updated:	01/16/2018
+		Version:        2.3
+		Last updated:	01/31/2018
 		===========================================================================
 #>
+[CmdletBinding()]
 Param
 (
 	[Parameter(Mandatory = $true,
-			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')]
-	[ValidateScript({ Test-Path $(Resolve-Path $_) })]
-	[Alias('ISO', 'WIM')]
-	[string]$SourcePath,
-	[Parameter(HelpMessage = 'Specify a different save location from default.')]
-	[ValidateScript({ Test-Path $(Resolve-Path $_) })]
-	[Alias('Save')]
-	[string]$SavePath
+			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')][ValidateScript({ Test-Path $(Resolve-Path $_) })][Alias('ISO', 'WIM')][string]$SourcePath,
+	[Parameter(HelpMessage = 'Specify a different save location from default.')][ValidateScript({ Test-Path $(Resolve-Path $_) })][Alias('Save')][string]$SavePath,
+	[Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')][switch]$ESD
 )
 
 $Host.UI.RawUI.WindowTitle = "Converting image."
@@ -287,12 +286,24 @@ Retail
 
 If ($ConversionComplete -eq $true)
 {
-	Write-Output ''
-	Write-Verbose "Exporting Windows 10 Pro for Workstations." -Verbose
-	[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
-	$SaveFolder = Create-SaveDirectory
-	Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
-	Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+	If ($ESD)
+	{
+		Write-Output ''
+		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This can take a while; please be patient." -Verbose
+		& [void](DISM.EXE /Export-Image /SourceImageFile:${ImageFile} /SourceIndex:${Index} /DestinationImageFile:${WorkFolder}\install.esd /Compress:recovery /CheckIntegrity)
+		$SaveFolder = Create-SaveDirectory
+		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
+		Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+	}
+	Else
+	{
+		Write-Output ''
+		Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations." -Verbose
+		[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
+		$SaveFolder = Create-SaveDirectory
+		Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
+		Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+	}
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
