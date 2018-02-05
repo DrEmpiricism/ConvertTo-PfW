@@ -1,0 +1,6 @@
+## 2.0.0.5 ##
+
+Added image health validation to ensure no corruption is detected.
+Improved overall output information.
+Added additional error handling.
+Made some minor C# changes for image handling.
