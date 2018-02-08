@@ -1,23 +1,18 @@
 ## 2.0.0.6 ##
 
-There is now a input box that dispays after the conversion process is complete that allows one to select whether the new image is to be saved as a WIM file, using maximum compression, or as an ESD file utilizing solid compression.
-
-Currently the input box has a timeout of 15 seconds, and if no selection has been made, it will automatically export and compress the new image as a WIM file using maximum compression.
-
-Selecting "Solid" will compress the image into an ESD file, and this compression process can take quite a while to complete and is system intensive. Do not enable this compression if you're impatient, or if you have a rather outdated PC.
-
-Optimized the C# code for accessing the WIM handle and added the setting of ("/IMAGE/DISPLAYNAME").Value and ("/IMAGE/DISPLAYDESCRIPTION").Value
-
-Likewise, a small XML file is exported one can view.
-
-Changed the XML callback method in closing the image's handle upon completion.
+- There is now a input box that dispays after the conversion process is complete that allows one to select whether the new image is to be saved as a WIM file, using maximum compression, or as an ESD file utilizing solid compression.
+- Currently the input box has a timeout of 15 seconds, and if no selection has been made, it will automatically export and compress the new image as a WIM file using maximum compression.
+- Selecting "Solid" will compress the image into an ESD file, and this compression process can take quite a while to complete and is system intensive. Do not enable this compression if you're impatient, or if you have a rather outdated PC.
+- Optimized the C# code for accessing the WIM handle and added the setting of ("/IMAGE/DISPLAYNAME").Value and ("/IMAGE/DISPLAYDESCRIPTION").Value
+- Likewise, a small XML file is exported one can view.
+- Changed the XML callback method in closing the image's handle upon completion.
 
 
 -----------------------------------------------------------------------------------------------------------------------------------
 
 ## 2.0.0.5 ##
 
-Added image health validation to ensure no corruption is detected.
-Improved overall output information.
-Added additional error handling.
-Made some minor C# changes for image handling.
+- Added image health validation to ensure no corruption is detected.
+- Improved overall output information.
+- Added additional error handling.
+- Made some minor C# changes for image handling.
