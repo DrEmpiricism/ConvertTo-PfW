@@ -21,15 +21,11 @@
 - Changes the WIM's Edition ID to Windows 10 Pro for Workstations.
 - Converts the WIM's default XML values to Windows 10 Pro for Workstations specific values.
 - Generates a Windows 10 Pro for Workstations EI.CFG
-- Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop.
+- Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop or the specified SavePath.
 
 # How is the executable version different from the script version?
-- The executable uses C# code with a wrapper to natively access and convert the WIM file's default XML values to Windows 10 Pro for Workstations specific values.  As such, it does not require the ImageX.exe, or the ImageX.txt encoded file, to change the default values.
+- The executable uses C# code with a wrapper to natively access and convert the WIM file's default XML values to Windows 10 Pro for Workstations specific values.  As such, it does not require any additional files to change the default values for its conversion.
 - It's entirely drag and drop.
 
 # Requirements
 - Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
-- ImageX.exe in the root directory of the script, or the encoded ImageX.txt included in this repository.
-
-# Notes
-- If ImageX.exe nor the ImageX.txt encoded file are located in the root directory, the script will attempt to download the ImageX.txt encoded file from this repository to use.
