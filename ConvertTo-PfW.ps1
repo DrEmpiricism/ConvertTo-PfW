@@ -28,8 +28,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.3
-		Last updated:	01/31/2018
+		Version:        2.4
+		Last updated:	02/08/2018
 		===========================================================================
 #>
 [CmdletBinding()]
@@ -114,19 +114,10 @@ If (!(Verify-Admin))
 	Throw "This script requires administrative permissions."
 }
 
-If (Test-Path -Path "$PSScriptRoot\imagex.exe")
+If ((Test-Path -Path "$PSScriptRoot\Bin\wimlib-imagex.exe") -and (Test-Path -Path "$PSScriptRoot\Bin\libwim-15.dll"))
 {
-	Copy-Item -Path "$PSScriptRoot\imagex.exe" -Destination $env:TEMP -Force
-	$Error.Clear()
-	Clear-Host
-}
-ElseIf (Test-Path -Path "$PSSciptRoot\Encoded\imagex.txt")
-{
-	Copy-Item -Path "$PSSciptRoot\Encoded\imagex.txt" -Destination $env:TEMP -Force
-	$FileContent = Get-Content -Path $env:TEMP\imagex.txt
-	$FileContentDecoded = [System.Convert]::FromBase64String($FileContent)
-	Set-Content -Path $env:TEMP\imagex.exe -Value $FileContentDecoded -Encoding Byte
-	Remove-Item -Path $env:TEMP\imagex.txt -Force
+	Copy-Item -Path "$PSScriptRoot\Bin\wimlib-imagex.exe" -Destination $env:TEMP -Force
+	Copy-Item -Path "$PSScriptRoot\Bin\libwim-15.dll" -Destination $env:TEMP -Force
 	$Error.Clear()
 	Clear-Host
 }
@@ -134,17 +125,14 @@ Else
 {
 	If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
 	{
-		(Invoke-WebRequest https://raw.githubusercontent.com/DrEmpiricism/ConvertTo-PfW/master/Encoded/imagex.txt).Content | Set-Content -Path $env:TEMP\imagex.txt
-		$FileContent = Get-Content -Path $env:TEMP\imagex.txt
-		$FileContentDecoded = [System.Convert]::FromBase64String($FileContent)
-		Set-Content -Path $env:TEMP\imagex.exe -Value $FileContentDecoded -Encoding Byte
-		Remove-Item -Path $env:TEMP\imagex.txt -Force
+		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll)
+		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe)
 		$Error.Clear()
 		Clear-Host
 	}
 	Else
 	{
-		Throw "Unable to detect or retrieve ImageX.exe."
+		Throw "Unable to retrieve WimLib; no active connection is available."
 	}
 }
 
@@ -182,15 +170,17 @@ ElseIf (([IO.FileInfo]$SourcePath).Extension -like ".WIM")
 	}
 }
 
-If ((Test-Path -Path $env:TEMP\install.wim) -and (Test-Path -Path $env:TEMP\imagex.exe))
+If ((Test-Path -Path $env:TEMP\install.wim) -and (Test-Path -Path $env:TEMP\libwim-15.dll) -and (Test-Path -Path $env:TEMP\wimlib-imagex.exe))
 {
 	[void]($WorkFolder = Create-WorkDirectory)
 	[void]($TempFolder = Create-TempDirectory)
 	[void]($ImageFolder = Create-ImageDirectory)
 	[void]($MountFolder = Create-MountDirectory)
 	Move-Item -Path $env:TEMP\install.wim -Destination $ImageFolder -Force
-	Move-Item -Path $env:TEMP\imagex.exe -Destination $ImageFolder -Force
+	Move-Item -Path $env:TEMP\libwim-15.dll -Destination $ImageFolder -Force
+	Move-Item -Path $env:TEMP\wimlib-imagex.exe -Destination $ImageFolder -Force
 	$ImageFile = "$ImageFolder\install.wim"
+	$WimLib = "$ImageFolder\wimlib-imagex.exe"
 	[string[]]$IndexImages = @(
 		"Windows 10 S", "Windows 10 S N", "Windows 10 Home N", "Windows 10 Home Single Language", "Windows 10 Education", "Windows 10 Education N", "Windows 10 Pro", "Windows 10 Pro N"
 	)
@@ -204,7 +194,7 @@ If ($ImageInfo.Count -gt "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 	Write-Output "$HomeImage detected. Converting to a single-index image file."
 	ForEach ($IndexImage in $IndexImages)
 	{
-		[void]($ImageInfo.Where({ $_.ImageName -contains $IndexImage }) | Remove-WindowsImage -ImagePath $ImageFile -Name $IndexImage)
+		[void]($ImageInfo.Where{ $_.ImageName -contains $IndexImage } | Remove-WindowsImage -ImagePath $ImageFile -Name $IndexImage)
 	}
 	$Index = "1"
 }
@@ -216,7 +206,12 @@ ElseIf ($ImageInfo.Count -eq "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 }
 Else
 {
-	Throw "$HomeImage not detected."
+	Write-Error -Message "$HomeImage not detected."
+	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ImageFolder -Recurse -Force
+	Remove-Item $MountFolder -Recurse -Force
+	Remove-Item $WorkFolder -Recurse -Force
+	Break
 }
 
 Try
@@ -239,10 +234,18 @@ Try
 	[void](Dismount-WindowsImage -Path $MountFolder -Save -CheckIntegrity -ScratchDirectory $TempFolder)
 	$IndexChangeComplete = $true
 }
-Catch [System.IO.IOException]
+Catch [System.Exception]
 {
 	Write-Output ''
 	Write-Error -Message "Unable to change Image Edition to Windows 10 Pro for Workstations." -Category WriteError
+	If (Get-WindowsImage -Mounted)
+	{
+		[void](Dismount-WindowsImage -Path $MountFolder -Discard)
+	}
+	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ImageFolder -Recurse -Force
+	Remove-Item $MountFolder -Recurse -Force
+	Remove-Item $WorkFolder -Recurse -Force
 	Break
 }
 
@@ -250,16 +253,20 @@ Try
 {
 	Write-Output ''
 	Write-Verbose "Converting $HomeImage to Windows 10 Pro for Workstations." -Verbose
-	Start-Process -Filepath CMD.exe -WorkingDirectory $ImageFolder -ArgumentList ('/c imagex /Info install.wim 1 "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" /Flags ProfessionalWorkstation') -Verb runas -WindowStyle Hidden -Wait
+	[void](Invoke-Expression -Command ('CMD.exe /C $WimLib Info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"'))
 	Write-Output ''
 	Write-Output "Conversion successful."
 	$ConversionComplete = $true
 	Start-Sleep 3
 }
-Catch [System.ArgumentException]
+Catch [System.Exception]
 {
 	Write-Output ''
 	Write-Error -Message "Unable to convert $HomeImage to Windows 10 Pro for Workstations." -Category InvalidArgument
+	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ImageFolder -Recurse -Force
+	Remove-Item $MountFolder -Recurse -Force
+	Remove-Item $WorkFolder -Recurse -Force
 	Break
 }
 
@@ -285,30 +292,90 @@ Retail
 	Start-Sleep 3
 }
 
-If ($ESD)
+Try
 {
-	Write-Output ''
-	Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations into an ESD file. This will take a while." -Verbose
-	[void](DISM /Export-Image /SourceImageFile:$ImageFile /SourceIndex:$Index /DestinationImageFile:$WorkFolder\install.esd /Compress:Recovery /CheckIntegrity)
-	[void](Clear-WindowsCorruptMountPoint)
-	$SaveFolder = Create-SaveDirectory
-	Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
+	If ($ESD)
+	{
+		Write-Output ''
+		Write-Verbose "Exporting Windows 10 Pro for Workstations into an ESD file. This will take some time to complete." -Verbose
+		[void](Invoke-Expression -Command ('CMD.exe /C $WimLib export $ImageFile $Index $WorkFolder\install.esd --solid --check'))
+		[void](Clear-WindowsCorruptMountPoint)
+		$SaveFolder = Create-SaveDirectory
+		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
+	}
+	Else
+	{
+		Write-Output ''
+		Write-Verbose "Exporting Windows 10 Pro for Workstations." -Verbose
+		[void](Invoke-Expression -Command ('CMD.exe /C $WimLib export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check'))
+		[void](Clear-WindowsCorruptMountPoint)
+		$SaveFolder = Create-SaveDirectory
+		Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
+	}
 }
-Else
+Finally
 {
+	Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ImageFolder -Recurse -Force
+	Remove-Item $MountFolder -Recurse -Force
+	Remove-Item $WorkFolder -Recurse -Force
 	Write-Output ''
-	Write-Verbose "Exporting and compressing Windows 10 Pro for Workstations." -Verbose
-	[void](Export-WindowsImage -CheckIntegrity -CompressionType maximum -SourceImagePath $ImageFile -SourceIndex $Index -DestinationImagePath $WorkFolder\install.wim -ScratchDirectory $TempFolder)
-	[void](Clear-WindowsCorruptMountPoint)
-	$SaveFolder = Create-SaveDirectory
-	Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
+	Write-Output "Windows 10 Pro for Workstations saved to $SaveFolder"
+	Start-Sleep 3
+	Write-Output ''
 }
-Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
-Remove-Item $TempFolder -Recurse -Force
-Remove-Item $ImageFolder -Recurse -Force
-Remove-Item $MountFolder -Recurse -Force
-Remove-Item $WorkFolder -Recurse -Force
-Write-Output ''
-Write-Output "Windows 10 Pro for Workstations saved to $SaveFolder"
-Start-Sleep 3
-Write-Output ''
+# SIG # Begin signature block
+# MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUprVSb4Qhz9fyQBLipwd+BBwE
+# pWGgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
+# MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
+# NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
+# Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
+# AQC61XYWFHD6Mf5tjbApbKSOWTlKYm9zYpVcHJ4bCXuRwUHaZEqd13GuvxA58oxL
+# sj2PjV2lzV00zFk0RyswA20H2bjQtRJ45WZWUZMpgcf6hIiFGtQCuEQnytjD0AQu
+# OTGBfwngyRsKLbaEDWk7B0dlWoYCvxt1zvXSIH2YcqpfP6QLejA+nyhvuLZm0O9E
+# aFvBCPc+7G68VfQCQyn+aBTQpJpH34O9Qv06B2FGSiDk+lwrKQW4juEDmrabgpYF
+# TACsxVUHK/1loejOvCZFyBXiyRoNaf8tJaSqmqzeB5zZz4rFAJesWEs+iAZutvfa
+# x6TzMGFtjjevzl6ZrnF7Fv/9AgMBAAGjczBxMBMGA1UdJQQMMAoGCCsGAQUFBwMD
+# MFoGA1UdAQRTMFGAEApGKFjm6hqPE+12gARxOhGhKzApMScwJQYDVQQDEx5PTU5J
+# Qy5URUNILUNBIENlcnRpZmljYXRlIFJvb3SCEIgU76EmbFSeTMjPeYe5TN0wCQYF
+# Kw4DAh0FAAOCAQEAte3lbQnd4Wnqf6qqmemtPLIHDna+382IRzBr4+ZaK4TXqXgl
+# /sPzVkwkoqroJV9mMrQPvVXjgCaHie5h5W0HeGRVdQv7biG4zRNzbheVck2LPaOo
+# MDNsNCc12ab9lvK/Y7eaj19iP1Yii/VBrnY3YsNt200icymp60R1QjgvXncPxZqK
+# viMg7VQWBTfQ3n7LucBhuSZaMJItbVRTlJsbXzkmCQzvG88/TDRbFqukbmDVgiZL
+# RONR2KTv0PRxopIews59WGMrJseuihET4z5a3L7xeUdwXCVPn87xgqIQGaCB5jui
+# 0DHgpniWmxbBuAQMPMeuwSEQV0jb5KqVUegFGDCCA0cwggIzoAMCAQICEIgU76Em
+# bFSeTMjPeYe5TN0wCQYFKw4DAh0FADApMScwJQYDVQQDEx5PTU5JQy5URUNILUNB
+# IENlcnRpZmljYXRlIFJvb3QwHhcNMTcxMTA3MDMzMjIyWhcNMzkxMjMxMjM1OTU5
+# WjApMScwJQYDVQQDEx5PTU5JQy5URUNILUNBIENlcnRpZmljYXRlIFJvb3QwggEi
+# MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDMH3EMA2t/V0+BbvaWhgoezpQZ
+# hY5NZcC/Yfs6YzAbCEBagmfT22NpAGKAd/fmsqL0DlZeBPDC8z5ga9BvxxWtvZQl
+# QzCHx3wbmgrpc9AA99xEGms3lhcKea+wqEPCebK/OnSPVqqxEoGykoLQiR2BSO/m
+# QL2hQPkM8kFGbX3ncUCMSdMWJR0XTcZL6zVPIpaLj0qJVEL6YoAFdlrd+6N2STex
+# 9LKZhJ88dtfEiM0e81KyAkHHjPX03abSKppVTgOxG4+WZtMDZnvlpolEi5tgVy0e
+# d04BBQmztKilRZILPkAgcmx89pf6Fa5Vss3Fp3Z7D+4e9nQ+4DZ/Vb1NIKZRAgMB
+# AAGjczBxMBMGA1UdJQQMMAoGCCsGAQUFBwMDMFoGA1UdAQRTMFGAEApGKFjm6hqP
+# E+12gARxOhGhKzApMScwJQYDVQQDEx5PTU5JQy5URUNILUNBIENlcnRpZmljYXRl
+# IFJvb3SCEIgU76EmbFSeTMjPeYe5TN0wCQYFKw4DAh0FAAOCAQEAtj1/SaELGLyj
+# DP2aRLpfMq1KIBoMjJvQhYfPWugzc6GJM/v+3LomDW8yylMhQRqy6749HMfDVXtJ
+# oc4KU00H2q7M5xXGX7HJlh4tFEMrT4k1WDVdxF/TgXxTlMWBfRXV/rNzSFHtHVf6
+# F+dY7INqxKlbMGpg3buF/Oh8ZtPk9xhyWtwraUTsyVBlmQlMeFeKwksbaSEy72mJ
+# 5DhQfVmEv1PTv/wIJ/ff8OOZ63AeJqpLcmFARbTUmQVboFEG5mU30BHHntABspLj
+# kdk4PCQjdVgG8Bd7uOC3XNbmrhTehi7Uu8uOBm7RQawF1wh65SlQm5HY2tntNPzD
+# qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
+# ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
+# MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
+# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBT1jsfNVSr4jbUxJTi2ZKTtT1IvVzCB
+# rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
+# SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
+# bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
+# dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
+# uRd339WydSydOhLq4CEkflYoMSF1OBBPgNqq+Cz6bLAMF+hXwwtaOOvXJfh0maG/
+# 2fInGKT9UhT13kUd8TEx+ZpJtZoV1gpZYfVbcvN703I1kxSA13JKWlvArxQUo2GC
+# PBjyMRTYu3VrKJosyVopN2e/bUMEpAGaa/e+g0JdedsyCmW3UlaF7RYP6f09sqWf
+# /V/RDM0MORKw6zWmsiJU7rP2NhDqLM5+VJAiYsMLr4MFyDRGLw1JjpifnCoYLCkQ
+# MEHI+bbvWb/tCB9o90Rge3YKm5xClqkQhb98jwIezTF5/YNIvUZBJjAB7TCryTCL
+# hDsgJ9jNyHiyS9e5MLRxYQ==
+# SIG # End signature block
