@@ -1,3 +1,11 @@
+## 2.0.0.7 ##
+
+- Added image build verification to ensure the build version is supported.
+- Increased the input box's timeout to 30 seconds.
+- Improved source image validation.
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.0.6 ##
 
 - There is now a input box that dispays after the conversion process is complete that allows one to select whether the new image is to be saved as a WIM file, using maximum compression, or as an ESD file utilizing solid compression.
@@ -6,7 +14,6 @@
 - Optimized the C# code for accessing the WIM handle and added the setting of ("/IMAGE/DISPLAYNAME").Value and ("/IMAGE/DISPLAYDESCRIPTION").Value
 - Likewise, a small XML file is exported one can view.
 - Changed the XML callback method in closing the image's handle upon completion.
-
 
 -----------------------------------------------------------------------------------------------------------------------------------
 
