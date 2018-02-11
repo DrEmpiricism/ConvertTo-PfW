@@ -266,6 +266,7 @@ Try
 	}
 	Else
 	{
+		Write-Output ''
 		Write-Warning "The image build [$($WIMProperties.CurrentBuildNumber)] is not supported."
 		Break
 	}
