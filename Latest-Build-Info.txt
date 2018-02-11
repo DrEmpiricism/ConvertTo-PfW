@@ -1,5 +1,12 @@
-## 2.4 ##
+## 2.4.1 ##
+
+- Added image build verification to ensure the build version is supported.
+- Improved source path and save path validation.
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+## 2.4.0 ##
 
 - Switched from ImageX to Wimlib for ths script version.
 - Like ImageX, if the script does not detect the two required files from this repository, it will automatically download them.
-- The executable version requires no files, as it accesses the WIM file using a C# .NET Framework method using the Wimgapi.dll; however, there is no difference in the final image.
+- The executable version requires no files, as it accesses the WIM file using a C# .NET Framework method via the Wimgapi.dll.
