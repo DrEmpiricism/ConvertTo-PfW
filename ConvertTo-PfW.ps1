@@ -28,16 +28,23 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4
-		Last updated:	02/08/2018
+		Version:        2.4.1
+		Last updated:	02/10/2018
 		===========================================================================
 #>
 [CmdletBinding()]
 Param
 (
 	[Parameter(Mandatory = $true,
-			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')][ValidateScript({ Test-Path $(Resolve-Path $_) })][Alias('ISO', 'WIM')][string]$SourcePath,
-	[Parameter(HelpMessage = 'Specify a different save location from default.')][ValidateScript({ Test-Path $(Resolve-Path $_) })][Alias('Save')][string]$SavePath,
+			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')][ValidateScript({
+			If ((Test-Path $(Resolve-Path $_) -PathType Leaf) -and ($_ -like "*.iso")) { $_ }
+			ElseIf ((Test-Path $(Resolve-Path $_) -PathType Leaf) -and ($_ -like "*.wim")) { $_ }
+			Else { Throw "$_ is an invalid image type." }
+		})][Alias('ISO', 'WIM')][string]$SourcePath,
+	[Parameter(HelpMessage = 'Specify a different save location from default.')][ValidateScript({
+			If (Test-Path $(Resolve-Path $_) -PathType Container) { $_ }
+			Else { Throw "$_ is an invalid save path." }
+		})][Alias('Save')][string]$SavePath,
 	[Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')][switch]$ESD
 )
 
@@ -107,6 +114,28 @@ Function Create-SaveDirectory
 		New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
 	}
 }
+
+Function Load-SoftwareHive
+{
+	[void](REG LOAD HKLM\WIM_HKLM_SOFTWARE "$MountFolder\windows\system32\config\software")
+}
+
+Function Unload-SoftwareHive
+{
+	Start-Sleep 3
+	[System.GC]::Collect()
+	[void](REG UNLOAD HKLM\WIM_HKLM_SOFTWARE)
+}
+
+Function Verify-SoftwareHive
+{
+	[CmdletBinding()]
+	Param ()
+	
+	$HivePath = @(
+		"HKLM:\WIM_HKLM_SOFTWARE"
+	) | % { $SoftwareHiveLoaded = ((Test-Path -Path $_) -eq $true) }; Return $SoftwareHiveLoaded
+}
 #endregion Helper Functions
 
 If (!(Verify-Admin))
@@ -125,6 +154,7 @@ Else
 {
 	If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
 	{
+		Write-Verbose "Wimlib not found. Grabbing it from GitHub." -Verbose
 		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll)
 		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe)
 		$Error.Clear()
@@ -132,7 +162,7 @@ Else
 	}
 	Else
 	{
-		Throw "Unable to retrieve WimLib; no active connection is available."
+		Throw "Unable to retrieve required files. No active connection is available."
 	}
 }
 
@@ -188,6 +218,15 @@ If ((Test-Path -Path $env:TEMP\install.wim) -and (Test-Path -Path $env:TEMP\libw
 	$ImageInfo = Get-WindowsImage -ImagePath $ImageFile
 }
 
+If (!($ImageInfo.ImageName.Contains($HomeImage)))
+{
+	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ImageFolder -Recurse -Force
+	Remove-Item $MountFolder -Recurse -Force
+	Remove-Item $WorkFolder -Recurse -Force
+	Throw "$HomeImage not detected."
+}
+
 If ($ImageInfo.Count -gt "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 {
 	Write-Output ''
@@ -197,42 +236,97 @@ If ($ImageInfo.Count -gt "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 		[void]($ImageInfo.Where{ $_.ImageName -contains $IndexImage } | Remove-WindowsImage -ImagePath $ImageFile -Name $IndexImage)
 	}
 	$Index = "1"
+	Write-Output ''
+	Write-Verbose "Mounting Image." -Verbose
+	[void](Mount-WindowsImage -ImagePath $ImageFile -Index $Index -Path $MountFolder -ScratchDirectory $TempFolder)
 }
 ElseIf ($ImageInfo.Count -eq "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 {
 	Write-Output ''
 	Write-Output "$HomeImage detected."
 	$Index = "1"
+	Write-Output ''
+	Write-Verbose "Mounting Image." -Verbose
+	[void](Mount-WindowsImage -ImagePath $ImageFile -Index $Index -Path $MountFolder -ScratchDirectory $TempFolder)
 }
-Else
+
+Try
 {
-	Write-Error -Message "$HomeImage not detected."
+	[void](Load-SoftwareHive)
+	$WIMProperties = Get-ItemProperty -Path "HKLM:\WIM_HKLM_SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+	Write-Output ''
+	Write-Verbose "Verifying image build." -Verbose
+	Start-Sleep 3
+	If ($WIMProperties.CurrentBuildNumber -ge "16273")
+	{
+		Write-Output ''
+		Write-Output "The image build [$($WIMProperties.CurrentBuildNumber)] is supported."
+		Start-Sleep 3
+		[void](Unload-SoftwareHive)
+	}
+	Else
+	{
+		Write-Warning "The image build [$($WIMProperties.CurrentBuildNumber)] is not supported."
+		Break
+	}
+}
+Catch
+{
+	If (Verify-SoftwareHive)
+	{
+		[void](Unload-SoftwareHive)
+	}
+	Write-Output ''
+	Write-Output "Dismounting and discarding image."
+	[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
+	[void](Clear-WindowsCorruptMountPoint)
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break
+	Break; Exit
 }
 
 Try
 {
 	Write-Output ''
-	Write-Verbose "Mounting Image." -Verbose
-	[void](Mount-WindowsImage -ImagePath $ImageFile -Index $Index -Path $MountFolder -ScratchDirectory $TempFolder)
-	Write-Output ''
-	Write-Verbose "Changing Image Edition to Windows 10 Pro for Workstations." -Verbose
-	[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $TempFolder)
-	If (Test-Path -Path $MountFolder\Windows\Core.xml)
-	{
-		Remove-Item -Path $MountFolder\Windows\Core.xml -Force
-	}
-	Write-Output ''
-	Write-Output "Image Edition successfully changed."
+	Write-Verbose "Verifying image health." -Verbose
 	Start-Sleep 3
-	Write-Output ''
-	Write-Verbose "Saving and Dismounting Image." -Verbose
-	[void](Dismount-WindowsImage -Path $MountFolder -Save -CheckIntegrity -ScratchDirectory $TempFolder)
-	$IndexChangeComplete = $true
+	$ScriptStartHealthCheck = Repair-WindowsImage -Path $MountFolder -CheckHealth
+	If ($ScriptStartHealthCheck.ImageHealthState -eq "Healthy")
+	{
+		Write-Output ''
+		Write-Output "The image has returned as healthy."
+		Start-Sleep 3
+		Write-Output ''
+		Write-Verbose "Changing Image Edition to Windows 10 Pro for Workstations." -Verbose
+		[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $TempFolder)
+		If (Test-Path -Path $MountFolder\Windows\Core.xml)
+		{
+			Remove-Item -Path $MountFolder\Windows\Core.xml -Force
+		}
+		Write-Output ''
+		Write-Output "Image Edition successfully changed."
+		Start-Sleep 3
+		Write-Output ''
+		Write-Verbose "Saving and Dismounting Image." -Verbose
+		[void](Dismount-WindowsImage -Path $MountFolder -Save -CheckIntegrity -ScratchDirectory $TempFolder)
+	}
+	Else
+	{
+		Write-Output ''
+		Write-Warning "The image has been flagged for corruption. Further servicing is required."
+		Start-Sleep 3
+		Write-Output ''
+		Write-Output "Dismounting and discarding image."
+		[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
+		[void](Clear-WindowsCorruptMountPoint)
+		Remove-Item $TempFolder -Recurse -Force
+		Remove-Item $ImageFolder -Recurse -Force
+		Remove-Item $MountFolder -Recurse -Force
+		Remove-Item $WorkFolder -Recurse -Force
+		Break
+	}
 }
 Catch [System.Exception]
 {
@@ -246,7 +340,7 @@ Catch [System.Exception]
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break
+	Break; Exit
 }
 
 Try
@@ -267,7 +361,7 @@ Catch [System.Exception]
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break
+	Break; Exit
 }
 
 If ($ConversionComplete -eq $true)
@@ -315,67 +409,89 @@ Try
 }
 Finally
 {
+	$DefaultSavePath = $Desktop.Split("\")[-1] + "\" + $SaveFolder.Name
+	$CustomSavePath = $SaveFolder.Parent.Name + "\" + $SaveFolder.Name
 	Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
 	Write-Output ''
-	Write-Output "Windows 10 Pro for Workstations saved to $SaveFolder"
+	If ($DefaultSavePath.Equals($CustomSavePath))
+	{
+		Write-Output "Windows 10 Pro for Workstations saved to: $($DefaultSavePath)"
+	}
+	Else
+	{
+		Write-Output "Windows 10 Pro for Workstations saved to: $($CustomSavePath)"
+	}
 	Start-Sleep 3
 	Write-Output ''
 }
 # SIG # Begin signature block
-# MIIJnAYJKoZIhvcNAQcCoIIJjTCCCYkCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# MIIMEgYJKoZIhvcNAQcCoIIMAzCCC/8CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUprVSb4Qhz9fyQBLipwd+BBwE
-# pWGgggaRMIIDQjCCAi6gAwIBAgIQdLtQndqbgJJBvqGYnOa7JjAJBgUrDgMCHQUA
-# MCkxJzAlBgNVBAMTHk9NTklDLlRFQ0gtQ0EgQ2VydGlmaWNhdGUgUm9vdDAeFw0x
-# NzExMDcwMzM4MjBaFw0zOTEyMzEyMzU5NTlaMCQxIjAgBgNVBAMTGU9NTklDLlRF
-# Q0ggUG93ZXJTaGVsbCBDU0MwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIB
-# AQC61XYWFHD6Mf5tjbApbKSOWTlKYm9zYpVcHJ4bCXuRwUHaZEqd13GuvxA58oxL
-# sj2PjV2lzV00zFk0RyswA20H2bjQtRJ45WZWUZMpgcf6hIiFGtQCuEQnytjD0AQu
-# OTGBfwngyRsKLbaEDWk7B0dlWoYCvxt1zvXSIH2YcqpfP6QLejA+nyhvuLZm0O9E
-# aFvBCPc+7G68VfQCQyn+aBTQpJpH34O9Qv06B2FGSiDk+lwrKQW4juEDmrabgpYF
-# TACsxVUHK/1loejOvCZFyBXiyRoNaf8tJaSqmqzeB5zZz4rFAJesWEs+iAZutvfa
-# x6TzMGFtjjevzl6ZrnF7Fv/9AgMBAAGjczBxMBMGA1UdJQQMMAoGCCsGAQUFBwMD
-# MFoGA1UdAQRTMFGAEApGKFjm6hqPE+12gARxOhGhKzApMScwJQYDVQQDEx5PTU5J
-# Qy5URUNILUNBIENlcnRpZmljYXRlIFJvb3SCEIgU76EmbFSeTMjPeYe5TN0wCQYF
-# Kw4DAh0FAAOCAQEAte3lbQnd4Wnqf6qqmemtPLIHDna+382IRzBr4+ZaK4TXqXgl
-# /sPzVkwkoqroJV9mMrQPvVXjgCaHie5h5W0HeGRVdQv7biG4zRNzbheVck2LPaOo
-# MDNsNCc12ab9lvK/Y7eaj19iP1Yii/VBrnY3YsNt200icymp60R1QjgvXncPxZqK
-# viMg7VQWBTfQ3n7LucBhuSZaMJItbVRTlJsbXzkmCQzvG88/TDRbFqukbmDVgiZL
-# RONR2KTv0PRxopIews59WGMrJseuihET4z5a3L7xeUdwXCVPn87xgqIQGaCB5jui
-# 0DHgpniWmxbBuAQMPMeuwSEQV0jb5KqVUegFGDCCA0cwggIzoAMCAQICEIgU76Em
-# bFSeTMjPeYe5TN0wCQYFKw4DAh0FADApMScwJQYDVQQDEx5PTU5JQy5URUNILUNB
-# IENlcnRpZmljYXRlIFJvb3QwHhcNMTcxMTA3MDMzMjIyWhcNMzkxMjMxMjM1OTU5
-# WjApMScwJQYDVQQDEx5PTU5JQy5URUNILUNBIENlcnRpZmljYXRlIFJvb3QwggEi
-# MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDMH3EMA2t/V0+BbvaWhgoezpQZ
-# hY5NZcC/Yfs6YzAbCEBagmfT22NpAGKAd/fmsqL0DlZeBPDC8z5ga9BvxxWtvZQl
-# QzCHx3wbmgrpc9AA99xEGms3lhcKea+wqEPCebK/OnSPVqqxEoGykoLQiR2BSO/m
-# QL2hQPkM8kFGbX3ncUCMSdMWJR0XTcZL6zVPIpaLj0qJVEL6YoAFdlrd+6N2STex
-# 9LKZhJ88dtfEiM0e81KyAkHHjPX03abSKppVTgOxG4+WZtMDZnvlpolEi5tgVy0e
-# d04BBQmztKilRZILPkAgcmx89pf6Fa5Vss3Fp3Z7D+4e9nQ+4DZ/Vb1NIKZRAgMB
-# AAGjczBxMBMGA1UdJQQMMAoGCCsGAQUFBwMDMFoGA1UdAQRTMFGAEApGKFjm6hqP
-# E+12gARxOhGhKzApMScwJQYDVQQDEx5PTU5JQy5URUNILUNBIENlcnRpZmljYXRl
-# IFJvb3SCEIgU76EmbFSeTMjPeYe5TN0wCQYFKw4DAh0FAAOCAQEAtj1/SaELGLyj
-# DP2aRLpfMq1KIBoMjJvQhYfPWugzc6GJM/v+3LomDW8yylMhQRqy6749HMfDVXtJ
-# oc4KU00H2q7M5xXGX7HJlh4tFEMrT4k1WDVdxF/TgXxTlMWBfRXV/rNzSFHtHVf6
-# F+dY7INqxKlbMGpg3buF/Oh8ZtPk9xhyWtwraUTsyVBlmQlMeFeKwksbaSEy72mJ
-# 5DhQfVmEv1PTv/wIJ/ff8OOZ63AeJqpLcmFARbTUmQVboFEG5mU30BHHntABspLj
-# kdk4PCQjdVgG8Bd7uOC3XNbmrhTehi7Uu8uOBm7RQawF1wh65SlQm5HY2tntNPzD
-# qHcndUPZwjGCAnUwggJxAgEBMD0wKTEnMCUGA1UEAxMeT01OSUMuVEVDSC1DQSBD
-# ZXJ0aWZpY2F0ZSBSb290AhB0u1Cd2puAkkG+oZic5rsmMAkGBSsOAwIaBQCgggEN
-# MBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgor
-# BgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBT1jsfNVSr4jbUxJTi2ZKTtT1IvVzCB
-# rAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAAMQAwACAA
-# SABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIAbwAgAGYA
-# bwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAAYwBvAG4A
-# dgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEBBQAEggEA
-# uRd339WydSydOhLq4CEkflYoMSF1OBBPgNqq+Cz6bLAMF+hXwwtaOOvXJfh0maG/
-# 2fInGKT9UhT13kUd8TEx+ZpJtZoV1gpZYfVbcvN703I1kxSA13JKWlvArxQUo2GC
-# PBjyMRTYu3VrKJosyVopN2e/bUMEpAGaa/e+g0JdedsyCmW3UlaF7RYP6f09sqWf
-# /V/RDM0MORKw6zWmsiJU7rP2NhDqLM5+VJAiYsMLr4MFyDRGLw1JjpifnCoYLCkQ
-# MEHI+bbvWb/tCB9o90Rge3YKm5xClqkQhb98jwIezTF5/YNIvUZBJjAB7TCryTCL
-# hDsgJ9jNyHiyS9e5MLRxYQ==
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURGe/EgoCfLYndh+z9Z5pkXRk
+# XESgggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
+# AQsFADBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT8ixkARkWBU9N
+# TklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwHhcNMTgwMjA4MTY0MDU3WhcN
+# MjMwMjA4MTY1MDU3WjBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT
+# 8ixkARkWBU9NTklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwggEiMA0GCSqG
+# SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDDsQ+hzIyZ6FHC6IUCOhXEgjt5TrxUFn0w
+# nC9f1nw5MyVpI8wK7J3SoCbjPsgBUnfK/i50o/NhPXfR+ekOE7XR+yO3PIWIWTvv
+# 9EFtCM4u94tw7jxGpSU9pQweAWzkP8QBjbttWu51TIER6clMyyxojTj8SQZgxNqz
+# 4jIdDJiC7j+MS6HrH4ql/C3GIdHZhHIdStPGRvPHgfp8pm9Hyr5UWepGV2onn8Eb
+# 1eQawDyhLTIA842gdMO4gF+jQE7+zGg5IVq5BL2aReEKkqnby+HjlqW+a9AOS6Jw
+# idAUwF7OrrhtoWUUOdzYUs1WPxRQAtilyU3gdoqyGfUfcE1l4rl1AgMBAAGjUTBP
+# MAsGA1UdDwQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRbtzbutgPm
+# KPNKNYQYqIkQkCaJ6zAQBgkrBgEEAYI3FQEEAwIBADANBgkqhkiG9w0BAQsFAAOC
+# AQEAmO3Nw5TEi+sgkMqBtEw6kur2kED8S6lOvaOWXB3Kp5mVMsD8Fo9MQYMM9SxE
+# JsYvGJryRye4nu0OIwv95ojs/ieOVsKwg11/spo7elByto1K0Z6iDXXHOMTme/M0
+# Ye3V5DWJoQnRksRMjPeW1tpz3E/FH9qYzvQQv7bb6lU5Q7LqYt7n2jRcM6sDaVXc
+# cOVsgdb8Aih0ye7awgmhJHKzOQ9aUMlI8W6RtHvapK3rGTRNdZZCVifKjKvmPks9
+# 5iZnRbuqc7QiQF0H3hIWNKATVLLjjkotZrWW4LzC87072nFwg0g13+ooan18418I
+# eMVVOeAbkcNcCK1C3GcEDo8rsDCCBXUwggRdoAMCAQICE1kAAAACZ/v40yjR9ngA
+# AAAAAAIwDQYJKoZIhvcNAQELBQAwRzEUMBIGCgmSJomT8ixkARkWBFRFQ0gxFTAT
+# BgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UEAxMPT01OSUMtRE9SQURPLUNBMB4X
+# DTE4MDIwODE2NDgxM1oXDTE5MDIwODE2NDgxM1owTzEUMBIGCgmSJomT8ixkARkW
+# BFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEOMAwGA1UEAxMFVXNlcnMxEDAO
+# BgNVBAMTB0dvZEhhbmQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCh
+# 7439JFXgYkodIc/cHohJWJp+k2Rg/015cl9qWI5+2kuV/W3txB05uaHiQIFJKmr5
+# nsOPo/zG8RYgTRq6lXqLg6LGPVIE7DcCJwjDGB4Fr4KPTD6iU/bss2uFmewdc28a
+# qO9pvKPQTrqqoqc1e7ASuJRiKpIwJ7ojGmFfdatsWMiak46RBtKLM++WgoohvF0y
+# OlxwFTAo4bKIYW6yF4vUdLOSUs//FHlRN8ONkpJIDGvez+pvntCdypt8SFxokGiW
+# w6DBnnmI2q10NZK2zuINfxYXHG9M2hylXHLSbCQEsrUfeOTC90gFw5Wmxbp3p+F4
+# HpkpkG6i0FiuwwYN2gHTAgMBAAGjggJQMIICTDAlBgkrBgEEAYI3FAIEGB4WAEMA
+# bwBkAGUAUwBpAGcAbgBpAG4AZzATBgNVHSUEDDAKBggrBgEFBQcDAzAOBgNVHQ8B
+# Af8EBAMCB4AwHQYDVR0OBBYEFNs11f6VTYfS2x4exRBfPD5g38OcMB8GA1UdIwQY
+# MBaAFFu3Nu62A+Yo80o1hBioiRCQJonrMIHLBgNVHR8EgcMwgcAwgb2ggbqggbeG
+# gbRsZGFwOi8vL0NOPU9NTklDLURPUkFETy1DQSxDTj1ET1JBRE8sQ049Q0RQLENO
+# PVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENOPUNvbmZpZ3Vy
+# YXRpb24sREM9T01OSUMsREM9VEVDSD9jZXJ0aWZpY2F0ZVJldm9jYXRpb25MaXN0
+# P2Jhc2U/b2JqZWN0Q2xhc3M9Y1JMRGlzdHJpYnV0aW9uUG9pbnQwgcAGCCsGAQUF
+# BwEBBIGzMIGwMIGtBggrBgEFBQcwAoaBoGxkYXA6Ly8vQ049T01OSUMtRE9SQURP
+# LUNBLENOPUFJQSxDTj1QdWJsaWMlMjBLZXklMjBTZXJ2aWNlcyxDTj1TZXJ2aWNl
+# cyxDTj1Db25maWd1cmF0aW9uLERDPU9NTklDLERDPVRFQ0g/Y0FDZXJ0aWZpY2F0
+# ZT9iYXNlP29iamVjdENsYXNzPWNlcnRpZmljYXRpb25BdXRob3JpdHkwLQYDVR0R
+# BCYwJKAiBgorBgEEAYI3FAIDoBQMEkdvZEhhbmRAT01OSUMuVEVDSDANBgkqhkiG
+# 9w0BAQsFAAOCAQEAhcC7Tr1GtakUzANpsAY9wTnuiCDkPx/fYQSi5bcSOda+0dDp
+# IMs+8ZPopwwZd6ieRueB78BZiKPSghdGi2P/8eQdsJ1rbbb12iOzuaGdk61uTP6X
+# /LVPEpa/BTs12GH4B5Bo/A9MA2b1Q0adgit0bFC32/5/6azpxpDPqi9ItVpOfXgD
+# NMfuUzENYw7reZMGdRasF7Hb9E786CNfQQTDFysOBIVD5Tg2yMASu4vE/ppS/ufO
+# Wc4jOR6xcGXSMurr4UzN+jhcQBpXRZhvF1fOxkGMYuJLKqJmGEonrrhubHKsAZvM
+# wRKGMCf0QeLfj6cOKPGi0m9yI0JfyqUzVkyJEzGCApYwggKSAgEBMF4wRzEUMBIG
+# CgmSJomT8ixkARkWBFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UE
+# AxMPT01OSUMtRE9SQURPLUNBAhNZAAAAAmf7+NMo0fZ4AAAAAAACMAkGBSsOAwIa
+# BQCgggENMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsx
+# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRt48qt4MDl/2mHFIObQr5k
+# TFh3WjCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
+# MQAwACAASABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIA
+# bwAgAGYAbwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAA
+# YwBvAG4AdgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEB
+# BQAEggEAaxcyq1ZigJ04n+75ta76LlTna3s75fOj5ZRYp7T4Q8tMxBt9dUAr75bH
+# 3F40GsGieaETwBhcEtc+lj/P96fTsKpxqjPtkurSVGxb8q0PSS9neat6hTz4Q3NF
+# Kp+kg6gVlH16ypJbVxxtLW5Lt9FSnC5iU7VR60PjmnGUUMorTGQDo9AjRTCE754j
+# utbgmv4BMYxLcCy6996MqKHY7DQWjsSeZgy6W5oQvOMm8rr/wvEjOKZk0E8LF8eS
+# IqjKB3HD7/PjEYk+bHl1OAUxz6msXp474Hu2sfkfBOo1nOnNVfuxrc6OrVc4kFT4
+# UD0ZPR+TzPXFOzFV4PYHTeDsVt0UyA==
 # SIG # End signature block
