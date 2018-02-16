@@ -28,8 +28,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4.1
-		Last updated:	02/10/2018
+		Version:        2.4.2
+		Last updated:	02/16/2018
 		===========================================================================
 #>
 [CmdletBinding()]
@@ -98,20 +98,13 @@ Function Create-MountDirectory
 
 Function Create-SaveDirectory
 {
-	[CmdletBinding()]
-	Param ()
-	
 	If (!($SavePath))
 	{
 		New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
 	}
-	ElseIf (Test-Path -Path $SavePath -PathType Container)
-	{
-		New-Item -ItemType Directory -Path $SavePath\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
-	}
 	Else
 	{
-		New-Item -ItemType Directory -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
+		New-Item -ItemType Directory -Path $SavePath\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"
 	}
 }
 
@@ -129,9 +122,6 @@ Function Unload-SoftwareHive
 
 Function Verify-SoftwareHive
 {
-	[CmdletBinding()]
-	Param ()
-	
 	$HivePath = @(
 		"HKLM:\WIM_HKLM_SOFTWARE"
 	) | % { $SoftwareHiveLoaded = ((Test-Path -Path $_) -eq $true) }; Return $SoftwareHiveLoaded
@@ -154,7 +144,7 @@ Else
 {
 	If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
 	{
-		Write-Verbose "Wimlib not found. Grabbing it from GitHub." -Verbose
+		Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
 		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll)
 		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe)
 		$Error.Clear()
@@ -211,8 +201,15 @@ If ((Test-Path -Path $env:TEMP\install.wim) -and (Test-Path -Path $env:TEMP\libw
 	Move-Item -Path $env:TEMP\wimlib-imagex.exe -Destination $ImageFolder -Force
 	$ImageFile = "$ImageFolder\install.wim"
 	$WimLib = "$ImageFolder\wimlib-imagex.exe"
-	[string[]]$IndexImages = @(
-		"Windows 10 S", "Windows 10 S N", "Windows 10 Home N", "Windows 10 Home Single Language", "Windows 10 Education", "Windows 10 Education N", "Windows 10 Pro", "Windows 10 Pro N"
+	$IndexImages = @(
+		"Windows 10 S",
+		"Windows 10 S N",
+		"Windows 10 Home N",
+		"Windows 10 Home Single Language",
+		"Windows 10 Education",
+		"Windows 10 Education N",
+		"Windows 10 Pro",
+		"Windows 10 Pro N"
 	)
 	$HomeImage = "Windows 10 Home"
 	$ImageInfo = Get-WindowsImage -ImagePath $ImageFile
@@ -253,21 +250,22 @@ ElseIf ($ImageInfo.Count -eq "1" -and $ImageInfo.ImageName.Contains($HomeImage))
 Try
 {
 	[void](Load-SoftwareHive)
-	$WIMProperties = Get-ItemProperty -Path "HKLM:\WIM_HKLM_SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+	$WIMVersion = Get-ItemProperty -Path "HKLM:\WIM_HKLM_SOFTWARE\Microsoft\Windows NT\CurrentVersion"
 	Write-Output ''
 	Write-Verbose "Verifying image build." -Verbose
 	Start-Sleep 3
-	If ($WIMProperties.CurrentBuildNumber -ge "16273")
+	If ($WIMVersion.CurrentBuildNumber -ge "16273")
 	{
 		Write-Output ''
-		Write-Output "The image build [$($WIMProperties.CurrentBuildNumber)] is supported."
+		Write-Output "The image build [$($WIMVersion.CurrentBuildNumber)] is supported."
 		Start-Sleep 3
 		[void](Unload-SoftwareHive)
 	}
 	Else
 	{
 		Write-Output ''
-		Write-Warning "The image build [$($WIMProperties.CurrentBuildNumber)] is not supported."
+		Write-Error -Message "The image build [$($WIMVersion.CurrentBuildNumber)] is not supported."
+		Start-Sleep 3
 		Break
 	}
 }
@@ -285,7 +283,7 @@ Catch
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break; Exit
+	Break
 }
 
 Try
@@ -293,8 +291,8 @@ Try
 	Write-Output ''
 	Write-Verbose "Verifying image health." -Verbose
 	Start-Sleep 3
-	$ScriptStartHealthCheck = Repair-WindowsImage -Path $MountFolder -CheckHealth
-	If ($ScriptStartHealthCheck.ImageHealthState -eq "Healthy")
+	$HealthCheck = Repair-WindowsImage -Path $MountFolder -CheckHealth -ScratchDirectory $TempFolder
+	If ($HealthCheck.ImageHealthState -eq "Healthy")
 	{
 		Write-Output ''
 		Write-Output "The image has returned as healthy."
@@ -316,32 +314,25 @@ Try
 	Else
 	{
 		Write-Output ''
-		Write-Warning "The image has been flagged for corruption. Further servicing is required."
+		Write-Error -Message "The image has been flagged for corruption. Further servicing is required."
 		Start-Sleep 3
-		Write-Output ''
-		Write-Output "Dismounting and discarding image."
-		[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
-		[void](Clear-WindowsCorruptMountPoint)
-		Remove-Item $TempFolder -Recurse -Force
-		Remove-Item $ImageFolder -Recurse -Force
-		Remove-Item $MountFolder -Recurse -Force
-		Remove-Item $WorkFolder -Recurse -Force
 		Break
 	}
 }
 Catch [System.Exception]
 {
 	Write-Output ''
-	Write-Error -Message "Unable to change Image Edition to Windows 10 Pro for Workstations." -Category WriteError
+	Write-Output "Dismounting and discarding image."
 	If (Get-WindowsImage -Mounted)
 	{
-		[void](Dismount-WindowsImage -Path $MountFolder -Discard)
+		[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
+		[void](Clear-WindowsCorruptMountPoint)
 	}
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break; Exit
+	Break
 }
 
 Try
@@ -357,18 +348,17 @@ Try
 Catch [System.Exception]
 {
 	Write-Output ''
-	Write-Error -Message "Unable to convert $HomeImage to Windows 10 Pro for Workstations." -Category InvalidArgument
+	Write-Error -Message "Unable to convert $HomeImage to Windows 10 Pro for Workstations."
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
-	Break; Exit
+	Break
 }
 
-If ($ConversionComplete -eq $true)
+If ($ConversionComplete.Equals($true))
 {
-	$AddEICFG = {
-		$EICFGStr = @"
+	$EICFG_STR = @"
 [EditionID]
 ProfessionalWorkstation
 
@@ -378,12 +368,9 @@ Retail
 [VL]
 0
 "@
-		$CreateEICFG = Join-Path -Path $WorkFolder -ChildPath "EI.CFG"
-		Set-Content -Path $CreateEICFG -Value $EICFGStr -Force
-	}
-	Write-Output ''
-	Write-Verbose "Creating a Pro for Workstations EI.CFG." -Verbose
-	& $AddEICFG
+	Write-Verbose "Creating a Windows 10 Pro for Workstations EI.CFG." -Verbose
+	$EICFG_PATH = Join-Path -Path $WorkFolder -ChildPath "EI.cfg"
+	Set-Content -Path $EICFG_PATH -Value $EICFG_STR -Force
 	Start-Sleep 3
 }
 
@@ -412,7 +399,7 @@ Finally
 {
 	$DefaultSavePath = $Desktop.Split("\")[-1] + "\" + $SaveFolder.Name
 	$CustomSavePath = $SaveFolder.Parent.Name + "\" + $SaveFolder.Name
-	Move-Item -Path $WorkFolder\*.CFG -Destination $SaveFolder -Force
+	Move-Item -Path $WorkFolder\*.cfg -Destination $SaveFolder -Force
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
@@ -432,8 +419,8 @@ Finally
 # SIG # Begin signature block
 # MIIMEgYJKoZIhvcNAQcCoIIMAzCCC/8CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQURGe/EgoCfLYndh+z9Z5pkXRk
-# XESgggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqkDWcJZVaGJK+dfdSMp0auXS
+# 462gggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
 # AQsFADBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT8ixkARkWBU9N
 # TklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwHhcNMTgwMjA4MTY0MDU3WhcN
 # MjMwMjA4MTY1MDU3WjBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT
@@ -484,15 +471,15 @@ Finally
 # CgmSJomT8ixkARkWBFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UE
 # AxMPT01OSUMtRE9SQURPLUNBAhNZAAAAAmf7+NMo0fZ4AAAAAAACMAkGBSsOAwIa
 # BQCgggENMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsx
-# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRt48qt4MDl/2mHFIObQr5k
-# TFh3WjCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
+# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBSp+98qaJ0l0SxvcW9ZB4eD
+# 0/I65TCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
 # MQAwACAASABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIA
 # bwAgAGYAbwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAA
 # YwBvAG4AdgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEB
-# BQAEggEAaxcyq1ZigJ04n+75ta76LlTna3s75fOj5ZRYp7T4Q8tMxBt9dUAr75bH
-# 3F40GsGieaETwBhcEtc+lj/P96fTsKpxqjPtkurSVGxb8q0PSS9neat6hTz4Q3NF
-# Kp+kg6gVlH16ypJbVxxtLW5Lt9FSnC5iU7VR60PjmnGUUMorTGQDo9AjRTCE754j
-# utbgmv4BMYxLcCy6996MqKHY7DQWjsSeZgy6W5oQvOMm8rr/wvEjOKZk0E8LF8eS
-# IqjKB3HD7/PjEYk+bHl1OAUxz6msXp474Hu2sfkfBOo1nOnNVfuxrc6OrVc4kFT4
-# UD0ZPR+TzPXFOzFV4PYHTeDsVt0UyA==
+# BQAEggEAUY4T9yZclbI+nmKszFZ2CPZFtVFr729FIZZ2Wd+jefaIKI98Ud+51Htb
+# rpz1PgjEfabmOHbJJLaip0Bx1FOyQ1E23aq3JQxDlOjb1y+RTtTxfgP+lNTbN+Or
+# EUTzrdTApwHfZm2dREBbxqKjXpDYyHKrzmnrPES6nuS84qFSzHNbBEbekGX+Y4YG
+# Z75Hm43BgoGXc8WkpTEwApoxgdL/hXaWJ//5RXzYIjuTX83OrM+2/gUEXeM0B8+z
+# bpSPfK7cwDCZHXJXkrVZwdgz0VosEoZz4jzmMeIt1gZN7JaAApbU+8U82tskCnMM
+# cVDT35VWGy50FygcD1mq8wRFGtZF9g==
 # SIG # End signature block
