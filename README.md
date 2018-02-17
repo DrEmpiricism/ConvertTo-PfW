@@ -24,7 +24,7 @@
 - Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop or the specified SavePath.
 
 # How is the executable version different from the script version?
-- The executable uses C# code with a wrapper to natively access and convert the WIM file's default XML values to Windows 10 Pro for Workstations specific values.  As such, it does not require any additional files to change the default values for its conversion.
+- The executable uses C# code with a wrapper to natively access and WIM's metadata and convert its default XML values to Windows 10 Pro for Workstations specific values.  As such, it does not require any additional files to change the default values for its conversion.
 - It's entirely drag and drop.
 
 # Requirements
