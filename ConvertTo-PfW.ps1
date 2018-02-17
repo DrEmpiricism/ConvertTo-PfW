@@ -28,24 +28,31 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4.2
-		Last updated:	02/16/2018
+		Version:        2.4.3
+		Last updated:	02/17/2018
 		===========================================================================
 #>
 [CmdletBinding()]
 Param
 (
 	[Parameter(Mandatory = $true,
-			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')][ValidateScript({
+			   HelpMessage = 'The path to a Windows Installation ISO or an Install.WIM.')]
+	[ValidateScript({
 			If ((Test-Path $(Resolve-Path $_) -PathType Leaf) -and ($_ -like "*.iso")) { $_ }
 			ElseIf ((Test-Path $(Resolve-Path $_) -PathType Leaf) -and ($_ -like "*.wim")) { $_ }
 			Else { Throw "$_ is an invalid image type." }
-		})][Alias('ISO', 'WIM')][string]$SourcePath,
-	[Parameter(HelpMessage = 'Specify a different save location from default.')][ValidateScript({
+		})]
+	[Alias('ISO', 'WIM')]
+	[string]$SourcePath,
+	[Parameter(HelpMessage = 'Specify a different save location from default.')]
+	[ValidateScript({
 			If (Test-Path $(Resolve-Path $_) -PathType Container) { $_ }
 			Else { Throw "$_ is an invalid save path." }
-		})][Alias('Save')][string]$SavePath,
-	[Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')][switch]$ESD
+		})]
+	[Alias('Save')]
+	[string]$SavePath,
+	[Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')]
+	[switch]$ESD
 )
 
 $Host.UI.RawUI.WindowTitle = "Converting image."
@@ -145,8 +152,8 @@ Else
 	If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
 	{
 		Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
-		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll)
-		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe)
+		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll -TimeoutSec 15)
+		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe -TimeoutSec 15)
 		$Error.Clear()
 		Clear-Host
 	}
@@ -419,8 +426,8 @@ Finally
 # SIG # Begin signature block
 # MIIMEgYJKoZIhvcNAQcCoIIMAzCCC/8CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUqkDWcJZVaGJK+dfdSMp0auXS
-# 462gggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUTP800J2wgnLf+t1cuWmW9XSf
+# 2QqgggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
 # AQsFADBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT8ixkARkWBU9N
 # TklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwHhcNMTgwMjA4MTY0MDU3WhcN
 # MjMwMjA4MTY1MDU3WjBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT
@@ -471,15 +478,15 @@ Finally
 # CgmSJomT8ixkARkWBFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UE
 # AxMPT01OSUMtRE9SQURPLUNBAhNZAAAAAmf7+NMo0fZ4AAAAAAACMAkGBSsOAwIa
 # BQCgggENMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsx
-# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBSp+98qaJ0l0SxvcW9ZB4eD
-# 0/I65TCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
+# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBSjD9IPYOI6l75yBM7Dbltd
+# 7e1ATDCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
 # MQAwACAASABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIA
 # bwAgAGYAbwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAA
 # YwBvAG4AdgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEB
-# BQAEggEAUY4T9yZclbI+nmKszFZ2CPZFtVFr729FIZZ2Wd+jefaIKI98Ud+51Htb
-# rpz1PgjEfabmOHbJJLaip0Bx1FOyQ1E23aq3JQxDlOjb1y+RTtTxfgP+lNTbN+Or
-# EUTzrdTApwHfZm2dREBbxqKjXpDYyHKrzmnrPES6nuS84qFSzHNbBEbekGX+Y4YG
-# Z75Hm43BgoGXc8WkpTEwApoxgdL/hXaWJ//5RXzYIjuTX83OrM+2/gUEXeM0B8+z
-# bpSPfK7cwDCZHXJXkrVZwdgz0VosEoZz4jzmMeIt1gZN7JaAApbU+8U82tskCnMM
-# cVDT35VWGy50FygcD1mq8wRFGtZF9g==
+# BQAEggEAcyfXv90UgVjciioqNAuinwc0xSsKHNt3SO1eZfLUhwVl/Hb/23TyMv+P
+# /Xanm0GPfoz6JztInpF67Pm9A8lDs9o7aOVICORnitzT3EmzWqbcazMrvD0vRWpD
+# qAJEEdFpC+C03itFWsYm1Ca3UABwzLSJqGjhRhiI/jwOX0arMl/IzpPhZJOT6mdb
+# h+VA4fVKSgAb1y4RE4ptKRrLKXcod8ZsLw51Pa3rvenu7tMOtrBgAh1q0sZJ0KB8
+# vt/Ef7Gyi6MIGI6S7bo9mPQgVCIdTBLOmE4aB/bA1DskQgr0UmvPLuCRoAnZDGKm
+# oBNjTCdIjfHDAV3Aa8DHvrdaQa5YVg==
 # SIG # End signature block
