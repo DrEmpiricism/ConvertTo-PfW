@@ -1,8 +1,8 @@
 
 ## 2.0.0.10 ##
 
-- The build check of the images has been optimized, and occurs prior to the actual mounting of the resolved WIM file.
-- Compares and verifies metadata values to ensure the image has no discrepencies.
+- The build version verification of the images has been optimized, and occurs prior to the actual mounting of the resolved WIM file.
+- It now compares and verifies metadata values to ensure the image has no discrepencies.
 
 --------------------------------------------------------------------------------------------------------------------------------
 
