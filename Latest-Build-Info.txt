@@ -1,3 +1,9 @@
+## 2.4.4 ##
+
+- Some minor code changes.
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.4.1 ##
 
 - Added image build verification to ensure the build version is supported.
