@@ -1,3 +1,9 @@
+## 2.0.1.0 ##
+
+- Some minor contextual changes to image file values (i.e. "EditionID" now displays as just "Edition").
+- Added additional error catching.
+
+--------------------------------------------------------------------------------------------------------------------------------
 
 ## 2.0.0.10 ##
 
