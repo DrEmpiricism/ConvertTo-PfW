@@ -28,8 +28,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4.4
-		Last updated:	03/04/2018
+		Version:        2.4.5
+		Last updated:	03/13/2018
 		===========================================================================
 #>
 [CmdletBinding()]
@@ -307,7 +307,7 @@ Try
 	Write-Output ''
 	Write-Verbose "Converting $HomeImage to Windows 10 Pro for Workstations." -Verbose
 	Start-Sleep 3
-	[void](Invoke-Expression -Command ('CMD.exe /C $WimLib info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"'))
+	[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"'))
 	Write-Output ''
 	Write-Output "Conversion successful."
 	$ConversionComplete = $true
@@ -349,7 +349,7 @@ Try
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations to an ESD file. This will take some time to complete." -Verbose
-		[void](Invoke-Expression -Command ('CMD.exe /C $WimLib export $ImageFile $Index $WorkFolder\install.esd --solid --check'))
+		[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.esd --solid --check'))
 		[void](Clear-WindowsCorruptMountPoint)
 		$SaveFolder = Create-SaveDirectory
 		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
@@ -358,7 +358,7 @@ Try
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations." -Verbose
-		[void](Invoke-Expression -Command ('CMD.exe /C $WimLib export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check'))
+		[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check'))
 		[void](Clear-WindowsCorruptMountPoint)
 		$SaveFolder = Create-SaveDirectory
 		Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
@@ -377,69 +377,53 @@ Finally
 	Write-Output ''
 }
 # SIG # Begin signature block
-# MIIMEgYJKoZIhvcNAQcCoIIMAzCCC/8CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# MIIJKwYJKoZIhvcNAQcCoIIJHDCCCRgCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUTP800J2wgnLf+t1cuWmW9XSf
-# 2QqgggjmMIIDaTCCAlGgAwIBAgIQb3wGgV/z161BGZ7IsR60pjANBgkqhkiG9w0B
-# AQsFADBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT8ixkARkWBU9N
-# TklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwHhcNMTgwMjA4MTY0MDU3WhcN
-# MjMwMjA4MTY1MDU3WjBHMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT
-# 8ixkARkWBU9NTklDMRgwFgYDVQQDEw9PTU5JQy1ET1JBRE8tQ0EwggEiMA0GCSqG
-# SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDDsQ+hzIyZ6FHC6IUCOhXEgjt5TrxUFn0w
-# nC9f1nw5MyVpI8wK7J3SoCbjPsgBUnfK/i50o/NhPXfR+ekOE7XR+yO3PIWIWTvv
-# 9EFtCM4u94tw7jxGpSU9pQweAWzkP8QBjbttWu51TIER6clMyyxojTj8SQZgxNqz
-# 4jIdDJiC7j+MS6HrH4ql/C3GIdHZhHIdStPGRvPHgfp8pm9Hyr5UWepGV2onn8Eb
-# 1eQawDyhLTIA842gdMO4gF+jQE7+zGg5IVq5BL2aReEKkqnby+HjlqW+a9AOS6Jw
-# idAUwF7OrrhtoWUUOdzYUs1WPxRQAtilyU3gdoqyGfUfcE1l4rl1AgMBAAGjUTBP
-# MAsGA1UdDwQEAwIBhjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRbtzbutgPm
-# KPNKNYQYqIkQkCaJ6zAQBgkrBgEEAYI3FQEEAwIBADANBgkqhkiG9w0BAQsFAAOC
-# AQEAmO3Nw5TEi+sgkMqBtEw6kur2kED8S6lOvaOWXB3Kp5mVMsD8Fo9MQYMM9SxE
-# JsYvGJryRye4nu0OIwv95ojs/ieOVsKwg11/spo7elByto1K0Z6iDXXHOMTme/M0
-# Ye3V5DWJoQnRksRMjPeW1tpz3E/FH9qYzvQQv7bb6lU5Q7LqYt7n2jRcM6sDaVXc
-# cOVsgdb8Aih0ye7awgmhJHKzOQ9aUMlI8W6RtHvapK3rGTRNdZZCVifKjKvmPks9
-# 5iZnRbuqc7QiQF0H3hIWNKATVLLjjkotZrWW4LzC87072nFwg0g13+ooan18418I
-# eMVVOeAbkcNcCK1C3GcEDo8rsDCCBXUwggRdoAMCAQICE1kAAAACZ/v40yjR9ngA
-# AAAAAAIwDQYJKoZIhvcNAQELBQAwRzEUMBIGCgmSJomT8ixkARkWBFRFQ0gxFTAT
-# BgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UEAxMPT01OSUMtRE9SQURPLUNBMB4X
-# DTE4MDIwODE2NDgxM1oXDTE5MDIwODE2NDgxM1owTzEUMBIGCgmSJomT8ixkARkW
-# BFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEOMAwGA1UEAxMFVXNlcnMxEDAO
-# BgNVBAMTB0dvZEhhbmQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCh
-# 7439JFXgYkodIc/cHohJWJp+k2Rg/015cl9qWI5+2kuV/W3txB05uaHiQIFJKmr5
-# nsOPo/zG8RYgTRq6lXqLg6LGPVIE7DcCJwjDGB4Fr4KPTD6iU/bss2uFmewdc28a
-# qO9pvKPQTrqqoqc1e7ASuJRiKpIwJ7ojGmFfdatsWMiak46RBtKLM++WgoohvF0y
-# OlxwFTAo4bKIYW6yF4vUdLOSUs//FHlRN8ONkpJIDGvez+pvntCdypt8SFxokGiW
-# w6DBnnmI2q10NZK2zuINfxYXHG9M2hylXHLSbCQEsrUfeOTC90gFw5Wmxbp3p+F4
-# HpkpkG6i0FiuwwYN2gHTAgMBAAGjggJQMIICTDAlBgkrBgEEAYI3FAIEGB4WAEMA
-# bwBkAGUAUwBpAGcAbgBpAG4AZzATBgNVHSUEDDAKBggrBgEFBQcDAzAOBgNVHQ8B
-# Af8EBAMCB4AwHQYDVR0OBBYEFNs11f6VTYfS2x4exRBfPD5g38OcMB8GA1UdIwQY
-# MBaAFFu3Nu62A+Yo80o1hBioiRCQJonrMIHLBgNVHR8EgcMwgcAwgb2ggbqggbeG
-# gbRsZGFwOi8vL0NOPU9NTklDLURPUkFETy1DQSxDTj1ET1JBRE8sQ049Q0RQLENO
-# PVB1YmxpYyUyMEtleSUyMFNlcnZpY2VzLENOPVNlcnZpY2VzLENOPUNvbmZpZ3Vy
-# YXRpb24sREM9T01OSUMsREM9VEVDSD9jZXJ0aWZpY2F0ZVJldm9jYXRpb25MaXN0
-# P2Jhc2U/b2JqZWN0Q2xhc3M9Y1JMRGlzdHJpYnV0aW9uUG9pbnQwgcAGCCsGAQUF
-# BwEBBIGzMIGwMIGtBggrBgEFBQcwAoaBoGxkYXA6Ly8vQ049T01OSUMtRE9SQURP
-# LUNBLENOPUFJQSxDTj1QdWJsaWMlMjBLZXklMjBTZXJ2aWNlcyxDTj1TZXJ2aWNl
-# cyxDTj1Db25maWd1cmF0aW9uLERDPU9NTklDLERDPVRFQ0g/Y0FDZXJ0aWZpY2F0
-# ZT9iYXNlP29iamVjdENsYXNzPWNlcnRpZmljYXRpb25BdXRob3JpdHkwLQYDVR0R
-# BCYwJKAiBgorBgEEAYI3FAIDoBQMEkdvZEhhbmRAT01OSUMuVEVDSDANBgkqhkiG
-# 9w0BAQsFAAOCAQEAhcC7Tr1GtakUzANpsAY9wTnuiCDkPx/fYQSi5bcSOda+0dDp
-# IMs+8ZPopwwZd6ieRueB78BZiKPSghdGi2P/8eQdsJ1rbbb12iOzuaGdk61uTP6X
-# /LVPEpa/BTs12GH4B5Bo/A9MA2b1Q0adgit0bFC32/5/6azpxpDPqi9ItVpOfXgD
-# NMfuUzENYw7reZMGdRasF7Hb9E786CNfQQTDFysOBIVD5Tg2yMASu4vE/ppS/ufO
-# Wc4jOR6xcGXSMurr4UzN+jhcQBpXRZhvF1fOxkGMYuJLKqJmGEonrrhubHKsAZvM
-# wRKGMCf0QeLfj6cOKPGi0m9yI0JfyqUzVkyJEzGCApYwggKSAgEBMF4wRzEUMBIG
-# CgmSJomT8ixkARkWBFRFQ0gxFTATBgoJkiaJk/IsZAEZFgVPTU5JQzEYMBYGA1UE
-# AxMPT01OSUMtRE9SQURPLUNBAhNZAAAAAmf7+NMo0fZ4AAAAAAACMAkGBSsOAwIa
-# BQCgggENMBkGCSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsx
-# DjAMBgorBgEEAYI3AgEVMCMGCSqGSIb3DQEJBDEWBBSjD9IPYOI6l75yBM7Dbltd
-# 7e1ATDCBrAYKKwYBBAGCNwIBDDGBnTCBmqCBl4CBlABXAGkAbgBkAG8AdwBzACAA
-# MQAwACAASABvAG0AZQAgAHQAbwAgAFcAaQBuAGQAbwB3AHMAIAAxADAAIABQAHIA
-# bwAgAGYAbwByACAAVwBvAHIAawBzAHQAYQB0AGkAbwBuAHMAIABmAHUAbABsACAA
-# YwBvAG4AdgBlAHIAcwBpAG8AbgAgAHMAYwByAGkAcAB0AC4wDQYJKoZIhvcNAQEB
-# BQAEggEAcyfXv90UgVjciioqNAuinwc0xSsKHNt3SO1eZfLUhwVl/Hb/23TyMv+P
-# /Xanm0GPfoz6JztInpF67Pm9A8lDs9o7aOVICORnitzT3EmzWqbcazMrvD0vRWpD
-# qAJEEdFpC+C03itFWsYm1Ca3UABwzLSJqGjhRhiI/jwOX0arMl/IzpPhZJOT6mdb
-# h+VA4fVKSgAb1y4RE4ptKRrLKXcod8ZsLw51Pa3rvenu7tMOtrBgAh1q0sZJ0KB8
-# vt/Ef7Gyi6MIGI6S7bo9mPQgVCIdTBLOmE4aB/bA1DskQgr0UmvPLuCRoAnZDGKm
-# oBNjTCdIjfHDAV3Aa8DHvrdaQa5YVg==
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUXxSrl1N8Q6mm0X8+TtYzWQuy
+# U6SgggYxMIIDFDCCAgCgAwIBAgIQgnJLApNodKpGiwFxYC7KeTAJBgUrDgMCHQUA
+# MBgxFjAUBgNVBAMTDU9NTklDLlRFQ0gtQ0EwHhcNMTgwMzEzMTAxNDI3WhcNMzkx
+# MjMxMjM1OTU5WjAYMRYwFAYDVQQDEw1PTU5JQy5URUNILUNBMIIBIjANBgkqhkiG
+# 9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3DlhtznwS9RYFDwLLneugmUEZecwxytmEZU+
+# eXPfC3e7k85aYAhN9UEEhm/VsJB/NAFc5+khXqLVEWcuuD0xnnJholKRft3uP9ng
+# L/ebtVbuZR/nz8rSL6X3XrM9htU4sH2a6dzS4ESFbu6z3Xlg3sjrw7QN89XEcFEw
+# vKp5okD2sHaqP1AS/yJVNWLovBWY+W/RAWeVvLTjjSflcXNpbp2MgkrOHC65eB6w
+# PhgeATjP2/wprl6e2p7sVkRI9hQw6eQdDeWcYuTIY/9u/2uBVnjISnhrh3V58SpI
+# n3jV0apM8+H/YfuhEML2l7zc6xQ0358QoWIi9srkqH8sBFkrkQIDAQABo2IwYDAT
+# BgNVHSUEDDAKBggrBgEFBQcDAzBJBgNVHQEEQjBAgBB2Tn/VDn5XbZD6/biSSil9
+# oRowGDEWMBQGA1UEAxMNT01OSUMuVEVDSC1DQYIQgnJLApNodKpGiwFxYC7KeTAJ
+# BgUrDgMCHQUAA4IBAQDJ+S0c+mO4p+DsBF/kZYNqWcgJ3mD1keYX7O7aSEdG1pCX
+# +o9l4cj+u4NSGqc1sgO0U0Ftwq9El6Bk8k2YeWxJ8oUD3yQqPv1EXSs6tB53A6zA
+# 4nrm/1dmnqqQI9KSvEKZblr9KYTy6AoRcpzEezLM0sFXTaSqHGCPvCYP3Qar6oI7
+# eoaO8OkzcNH7dTxuXRrTWQ7IUeAr2/bUAJAbgnjwZpQ/yxdmjOnu+OdBXGtoe8Rv
+# G01nyxAj94TaCXsPcV8KxAusML4iEAlkmLsXtnpPY8jfnHpSx/LN0nEA5x3nwqPQ
+# DxRy0ZIeHb5ZXAo7v5E+G358O5CQ/TNGt2jGOrHqMIIDFTCCAgGgAwIBAgIQVJ8q
+# dzf/f7xETWjhXWNf/jAJBgUrDgMCHQUAMBgxFjAUBgNVBAMTDU9NTklDLlRFQ0gt
+# Q0EwHhcNMTgwMzEzMTAyMjA5WhcNMzkxMjMxMjM1OTU5WjAZMRcwFQYDVQQDEw5P
+# TU5JQy5URUNIIENTQzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOCR
+# mWrJc2EZ6cvOJHj7YQEcijDJ0bLSV+3Gi6G9CB5tKjlubGu9KqzTugTUEzxww6qe
+# fE6YSE4XSLevdaOVqcRKmKZ2iwwGIK5VCw54XpQLNBVpDO+3j2tmm3en3zvtb2G0
+# 73FO9zio6IyLz+0eoIEiXRTlJow0c1LSLbEitGaG+0YD6gSre5bSz6CWxmAVQqcD
+# 2u1YtXGXs7LccHLo/xyJtWgqmo4F+/8GCbN/9OXpgVdGQ0DA04kDFZJ2Jp22+sd4
+# gfpyY8lLNURnKqGGHSND9PB4p+uH1KaIL8zULJxOumz7Te3lm/LxkAN/dUye7zFX
+# K+Xl1YiT0xfQIgx8yhUCAwEAAaNiMGAwEwYDVR0lBAwwCgYIKwYBBQUHAwMwSQYD
+# VR0BBEIwQIAQdk5/1Q5+V22Q+v24kkopfaEaMBgxFjAUBgNVBAMTDU9NTklDLlRF
+# Q0gtQ0GCEIJySwKTaHSqRosBcWAuynkwCQYFKw4DAh0FAAOCAQEAMpU5vXMt8BxR
+# wTMYnLyNsSGXPoF8PI9LuO+gytZwdzcPPAoU46OczHY/xw6XDxsvI+87ytSAgFBv
+# 9/mla+e+9g8AIZUH9wHAGKRbn9pqLST3q+xHtYdrPN+KKOaN4DsL81kCMolNEPMt
+# NrG2IqBMiJSKglsNNTHkuPB1yNSw3Ix9W7qTFcoByjObZsZBE9vz90AwyPzTMQwt
+# +FiyYwZI1ELp1cGrX1vW3QGnzkdl/h0VEt1SDYvS712tVGRm2U49dF43bSwsKHdA
+# sccJgiQaf2tld9QPRWbtUK0PgTosBCpzjsl8MFS7TsHJ2dFGLAHefFqMM+fZgQa8
+# iuBBshmR3TGCAmQwggJgAgEBMCwwGDEWMBQGA1UEAxMNT01OSUMuVEVDSC1DQQIQ
+# VJ8qdzf/f7xETWjhXWNf/jAJBgUrDgMCGgUAoIIBDTAZBgkqhkiG9w0BCQMxDAYK
+# KwYBBAGCNwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG
+# 9w0BCQQxFgQUtRbhBH8JIerwKgUnEezAz8b9chswgawGCisGAQQBgjcCAQwxgZ0w
+# gZqggZeAgZQAVwBpAG4AZABvAHcAcwAgADEAMAAgAEgAbwBtAGUAIAB0AG8AIABX
+# AGkAbgBkAG8AdwBzACAAMQAwACAAUAByAG8AIABmAG8AcgAgAFcAbwByAGsAcwB0
+# AGEAdABpAG8AbgBzACAAZgB1AGwAbAAgAGMAbwBuAHYAZQByAHMAaQBvAG4AIABz
+# AGMAcgBpAHAAdAAuMA0GCSqGSIb3DQEBAQUABIIBAGu0AiNyJmw54X17HdATgmwL
+# uEQuJeqZ9Wjo+gM1eYWm2ZBi5Nxhq9Pn2cTo6EbJ/i09OdokZ7dudV2Y2ZQJCrZ+
+# 77Nv526SUDY/uR6tE+bnQBKEQl7ccBaqSEv9TVa1tnughFZ1SLaDfdcF4NYPxS9i
+# 1b3uyO47LRTa2iRLkVqt1t22TYgAcqtfIGm0iTQqO8Gx5fK5FvK0gfFQaki8/qFY
+# GUFaIfezWAASQYcx2YYj5GKQECaaUizI4JAk3RyaS3Tr+jvwJL4Bw3mg+uLK9id3
+# MTMSeOcK0kuuGdPbvRwB00y2zmklwCW1goPnrXoCBU742+38Q8bphXkiQikNkaI=
 # SIG # End signature block
