@@ -1,3 +1,11 @@
+## 2.0.1.1 ##
+
+- The .exe now displays the process results for each significant process performed (Edition change, metadata conversion, etc.).
+- Improved error-handling and the scope of the clean-up process, as it now checks for any invalid registry hives and automatially unloads them.
+- Added additional NativeMethods Callback events to include Abort messages if WimGapi detects a specific discrepency in the WIM file's scanned files and set range. This helps validate the file structure before and after the conversion process. Basically this is just an additional way to ensure the WIM file's integrity is maintained while processes are being performed.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.0 ##
 
 - Some minor contextual changes to image file values (i.e. "EditionID" now displays as just "Edition").
