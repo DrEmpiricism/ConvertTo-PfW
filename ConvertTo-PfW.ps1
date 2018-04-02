@@ -28,8 +28,8 @@
 		Created by:     DrEmpiricism
 		Contact:        Ben@Omnic.Tech
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4.5
-		Last updated:	03/13/2018
+		Version:        2.4.6
+		Last updated:	04/02/2018
 		===========================================================================
 #>
 [CmdletBinding()]
@@ -121,38 +121,59 @@ If (!(Verify-Admin))
 	Throw "This script requires administrative permissions."
 }
 
-If ((Test-Path -Path "$PSScriptRoot\Bin\wimlib-imagex.exe") -and (Test-Path -Path "$PSScriptRoot\Bin\libwim-15.dll"))
+Try
 {
-	Copy-Item -Path "$PSScriptRoot\Bin\wimlib-imagex.exe" -Destination $env:TEMP -Force
-	Copy-Item -Path "$PSScriptRoot\Bin\libwim-15.dll" -Destination $env:TEMP -Force
-	$Error.Clear()
-}
-Else
-{
-	If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
+	If ((Test-Path -Path "$PSScriptRoot\Bin\wimlib-imagex.exe") -and (Test-Path -Path "$PSScriptRoot\Bin\libwim-15.dll"))
 	{
-		Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
-		[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile $env:TEMP\libwim-15.dll -TimeoutSec 15 -ErrorAction Stop)
-		[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile $env:TEMP\wimlib-imagex.exe -TimeoutSec 15 -ErrorAction Stop)
-		Write-Output ''
+		Copy-Item -Path "$PSScriptRoot\Bin\wimlib-imagex.exe" -Destination $env:TEMP -Force
+		Copy-Item -Path "$PSScriptRoot\Bin\libwim-15.dll" -Destination $env:TEMP -Force
 		$Error.Clear()
 	}
 	Else
 	{
-		Throw "Unable to retrieve required files. No active connection is available."
+		If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true)
+		{
+			Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
+			[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+			$paramWebRequestDll = @{
+				Uri	       = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true"
+				OutFile    = "$env:TEMP\libwim-15.dll"
+				TimeoutSec = 15
+				ErrorAction = "Stop"
+			}
+			[void](Invoke-WebRequest @paramWebRequestDll)
+			$paramWebRequestExe = @{
+				Uri	       = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true"
+				OutFile    = "$env:TEMP\wimlib-imagex.exe"
+				TimeoutSec = 15
+				ErrorAction = "Stop"
+			}
+			[void](Invoke-WebRequest @paramWebRequestExe)
+			Write-Output ''
+			$Error.Clear()
+		}
+		Else
+		{
+			Throw "Unable to retrieve required files. No active connection is available."
+		}
 	}
 }
-
-If (([IO.FileInfo]$SourcePath).Extension -like ".ISO")
+Catch
 {
-	$ISOPath = (Resolve-Path $SourcePath).Path
-	$MountISO = Mount-DiskImage -ImagePath $ISOPath -StorageType ISO -PassThru
+	Write-Output ''
+	Write-Warning "The GitHub web request has timed out."
+	Break
+}
+
+If (([IO.FileInfo]$SourcePath).Extension -eq ".ISO")
+{
+	$ResolveISO = (Resolve-Path -Path $SourcePath).Path
+	$MountISO = Mount-DiskImage -ImagePath $ResolveISO -StorageType ISO -PassThru
 	$DriveLetter = ($MountISO | Get-Volume).DriveLetter
 	$InstallWIM = "$($DriveLetter):\sources\install.wim"
 	If (Test-Path -Path $InstallWIM)
 	{
-		Write-Verbose "Copying the WIM from '$(Split-Path $ISOPath -Leaf)'." -Verbose
+		Write-Verbose "Copying the WIM from $(Split-Path $ResolveISO -Leaf)." -Verbose
 		Copy-Item -Path $InstallWIM -Destination $env:TEMP\install.wim -Force
 		Dismount-DiskImage -ImagePath $SourcePath -StorageType ISO
 		If (([IO.FileInfo]"$env:TEMP\install.wim").IsReadOnly)
@@ -161,13 +182,17 @@ If (([IO.FileInfo]$SourcePath).Extension -like ".ISO")
 		}
 		$ImageIsCopied = $true
 	}
-}
-ElseIf (([IO.FileInfo]$SourcePath).Extension -like ".WIM")
-{
-	$WIMPath = (Resolve-Path $SourcePath).Path
-	If (Test-Path -Path $WIMPath)
+	Else
 	{
-		Write-Verbose "Copying the WIM from '$(Split-Path $WIMPath -Parent)'." -Verbose
+		Throw "$SourcePath does not contain valid installation media."
+	}
+}
+ElseIf (([IO.FileInfo]$SourcePath).Extension -eq ".WIM")
+{
+	$ResolveWIM = (Resolve-Path -Path $SourcePath).Path
+	If (Test-Path -Path $ResolveWIM)
+	{
+		Write-Verbose "Copying the WIM from $(Split-Path $ResolveWIM -Parent)." -Verbose
 		Copy-Item -Path $SourcePath -Destination $env:TEMP\install.wim -Force
 		If (([IO.FileInfo]"$env:TEMP\install.wim").IsReadOnly)
 		{
@@ -176,17 +201,13 @@ ElseIf (([IO.FileInfo]$SourcePath).Extension -like ".WIM")
 		$ImageIsCopied = $true
 	}
 }
-Else
-{
-	Remove-Item -Path $env:TEMP\install.wim -Force
-	Throw "$SourcePath does not contain valid installation media."
-}
 
 If ($ImageIsCopied.Equals($true))
 {
 	$CheckBuild = (Get-WindowsImage -ImagePath $env:TEMP\install.wim -Index 1)
 	If ($CheckBuild.Build -lt "16273")
 	{
+		Write-Output ''
 		Throw "The image build [$($CheckBuild.Build.ToString())] is not supported."
 	}
 	Else
@@ -256,7 +277,7 @@ Try
 	Write-Output ''
 	Write-Verbose "Verifying image health." -Verbose
 	Start-Sleep 3
-	$HealthCheck = Repair-WindowsImage -Path $MountFolder -CheckHealth -ScratchDirectory $TempFolder
+	$HealthCheck = (Repair-WindowsImage -Path $MountFolder -CheckHealth -ScratchDirectory $TempFolder)
 	If ($HealthCheck.ImageHealthState -eq "Healthy")
 	{
 		Write-Output ''
@@ -264,7 +285,7 @@ Try
 		Start-Sleep 3
 		Write-Output ''
 		Write-Verbose "Changing Image Edition to Windows 10 Pro for Workstations." -Verbose
-		[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $TempFolder)
+		[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $TempFolder -ErrorAction Stop)
 		If (Test-Path -Path $MountFolder\Windows\Core.xml)
 		{
 			Remove-Item -Path $MountFolder\Windows\Core.xml -Force
@@ -279,27 +300,29 @@ Try
 	Else
 	{
 		Write-Output ''
-		Write-Error -Message "The image has been flagged for corruption. Further servicing is required."
+		Write-Warning "The image has been flagged for corruption. Further servicing is required."
+		Remove-Item $TempFolder -Recurse -Force
+		Remove-Item $ImageFolder -Recurse -Force
+		Remove-Item $MountFolder -Recurse -Force
+		Remove-Item $WorkFolder -Recurse -Force
 		Start-Sleep 3
 		Break
 	}
 }
-Catch [System.Exception]
+Catch
 {
 	Write-Output ''
-	Write-Error -Message "An error occured changing the Image Edition."
-	Write-Output ''
-	Write-Output "Dismounting and discarding image."
-	If (Get-WindowsImage -Mounted)
-	{
-		[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
-		[void](Clear-WindowsCorruptMountPoint)
-	}
+	Write-Warning "An error occured changing the Image Edition. Dismounting and Discarding Image."
+	[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
 	Break
+}
+Finally
+{
+	[void](Clear-WindowsCorruptMountPoint)
 }
 
 Try
@@ -307,16 +330,20 @@ Try
 	Write-Output ''
 	Write-Verbose "Converting $HomeImage to Windows 10 Pro for Workstations." -Verbose
 	Start-Sleep 3
-	[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"'))
+	$paramConvert = @{
+		Command	     = ('CMD.EXE /C $WimLib info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"')
+		ErrorAction  = "Stop"
+	}
+	[void](Invoke-Expression @paramConvert)
 	Write-Output ''
 	Write-Output "Conversion successful."
 	$ConversionComplete = $true
 	Start-Sleep 3
 }
-Catch [System.Exception]
+Catch
 {
 	Write-Output ''
-	Write-Error -Message "Unable to convert $HomeImage to Windows 10 Pro for Workstations."
+	Write-Warning "Unable to convert $HomeImage to Windows 10 Pro for Workstations."
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
@@ -326,7 +353,7 @@ Catch [System.Exception]
 
 If ($ConversionComplete.Equals($true))
 {
-	$EICFG_STR = @"
+	$EICFG_STR = @'
 [EditionID]
 ProfessionalWorkstation
 
@@ -335,9 +362,7 @@ Retail
 
 [VL]
 0
-"@
-	Write-Output ''
-	Write-Verbose "Creating a Windows 10 Pro for Workstations EI.CFG." -Verbose
+'@
 	$EICFG_PATH = Join-Path -Path $WorkFolder -ChildPath "EI.cfg"
 	Set-Content -Path $EICFG_PATH -Value $EICFG_STR -Force
 	Start-Sleep 3
@@ -349,23 +374,33 @@ Try
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations to an ESD file. This will take some time to complete." -Verbose
-		[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.esd --solid --check'))
-		[void](Clear-WindowsCorruptMountPoint)
-		$SaveFolder = Create-SaveDirectory
-		Move-Item -Path $WorkFolder\install.esd -Destination $SaveFolder -Force
+		$paramExportESD = @{
+			Command	     = ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.esd --solid --check')
+			ErrorAction  = "Stop"
+		}
+		[void](Invoke-Expression @paramExportESD)
 	}
 	Else
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations." -Verbose
-		[void](Invoke-Expression -Command ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check'))
-		[void](Clear-WindowsCorruptMountPoint)
-		$SaveFolder = Create-SaveDirectory
-		Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
+		$paramExportMaximum = @{
+			Command	     = ('CMD.EXE /C $WimLib export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check')
+			ErrorAction  = "Stop"
+		}
+		[void](Invoke-Expression @paramExportMaximum)
 	}
+}
+Catch
+{
+	Write-Output ''
+	Write-Warning "Unable to export Windows 10 Pro for Workstations."
+	Break
 }
 Finally
 {
+	$SaveFolder = Create-SaveDirectory
+	Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
 	Move-Item -Path $WorkFolder\*.cfg -Destination $SaveFolder -Force
 	Remove-Item $TempFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
