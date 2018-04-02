@@ -1,3 +1,11 @@
+## 2.4.6 ##
+
+- Added additional error-catching.
+- Added a WebRequest timeout of 15 seconds.
+- Removed some redundant code.
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.4.5 ##
 
 - Some minor code changes.
