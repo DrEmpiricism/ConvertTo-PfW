@@ -136,16 +136,16 @@ Try
 			Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
 			[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
 			$paramWebRequestDll = @{
-				Uri	       = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true"
-				OutFile    = "$env:TEMP\libwim-15.dll"
-				TimeoutSec = 15
+				Uri	    = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true"
+				OutFile     = "$env:TEMP\libwim-15.dll"
+				TimeoutSec  = 15
 				ErrorAction = "Stop"
 			}
 			[void](Invoke-WebRequest @paramWebRequestDll)
 			$paramWebRequestExe = @{
-				Uri	       = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true"
-				OutFile    = "$env:TEMP\wimlib-imagex.exe"
-				TimeoutSec = 15
+				Uri	    = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true"
+				OutFile     = "$env:TEMP\wimlib-imagex.exe"
+				TimeoutSec  = 15
 				ErrorAction = "Stop"
 			}
 			[void](Invoke-WebRequest @paramWebRequestExe)
