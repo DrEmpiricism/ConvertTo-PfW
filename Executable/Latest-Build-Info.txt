@@ -1,3 +1,11 @@
+## 2.0.1.4 ##
+
+- Cleaned up the output quite a bit and eliminated insignificant verbosity being returned to the console.
+- Re-wrote the NativeMethods' class for the WIM handle access that WIMGapi uses.
+- Added a GetExtension check, followed by a ChangeExtension for ISO/WIM files.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.3 ##
 
 - Some additional image checking (extension type) have been added.
