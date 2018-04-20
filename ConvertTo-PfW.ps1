@@ -119,7 +119,7 @@ Try {
         $Error.Clear()
     }
     Else {
-        If ((Test-Connection $env:COMPUTERNAME -Quiet) -eq $true) {
+        If ((Test-Connection $Env:COMPUTERNAME -Quiet) -eq $true) {
             Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
             [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
             $paramWebRequestDll = @{
