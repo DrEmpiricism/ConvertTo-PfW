@@ -368,6 +368,7 @@ Finally {
     Start-Sleep 3
     Write-Output ''
     Write-Verbose "Full image conversion has completed with [$($Error.Count)] errors." -Verbose
+    Write-Output ''
 }
 
 # SIG # Begin signature block
