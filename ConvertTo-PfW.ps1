@@ -35,24 +35,24 @@
 [OutputType([System.Object])]
 Param
 (
-	[Parameter(Mandatory = $true,
-			   HelpMessage = 'The path to a Windows Installation ISO or an install.wim.')]
-	[ValidateScript({
-			If ((Test-Path $(Resolve-Path -Path $_) -PathType Leaf) -and ($_ -like "*.iso")) { $_ }
-			ElseIf ((Test-Path $(Resolve-Path -Path $_) -PathType Leaf) -and ($_ -like "*.wim")) { $_ }
-			Else { Throw "$_ is an invalid image type." }
-		})]
-	[Alias('ISO', 'WIM')]
-	[string]$SourcePath,
-	[Parameter(HelpMessage = 'Specify a different save location from default.')]
-	[ValidateScript({
-			If (Test-Path $(Resolve-Path -Path $_) -PathType Container) { $_ }
-			Else { Throw "$_ is an invalid save path." }
-		})]
-	[Alias('Save')]
-	[string]$SavePath,
-	[Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')]
-	[switch]$ESD
+    [Parameter(Mandatory = $true,
+        HelpMessage = 'The path to a Windows Installation ISO or an install.wim.')]
+    [ValidateScript( {
+            If ((Test-Path $(Resolve-Path -Path $_) -PathType Leaf) -and ($_ -like "*.iso")) { $_ }
+            ElseIf ((Test-Path $(Resolve-Path -Path $_) -PathType Leaf) -and ($_ -like "*.wim")) { $_ }
+            Else { Throw "$_ is an invalid image type." }
+        })]
+    [Alias('ISO', 'WIM')]
+    [string]$SourcePath,
+    [Parameter(HelpMessage = 'Specify a different save location from default.')]
+    [ValidateScript( {
+            If (Test-Path $(Resolve-Path -Path $_) -PathType Container) { $_ }
+            Else { Throw "$_ is an invalid save path." }
+        })]
+    [Alias('Save')]
+    [string]$SavePath,
+    [Parameter(HelpMessage = 'Compresses the final image to an ESD file instead of a WIM file.')]
+    [switch]$ESD
 )
 
 $Host.UI.RawUI.WindowTitle = "Converting image."
