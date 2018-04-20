@@ -1,3 +1,12 @@
+## 2.4.7 ##
+
+- Optimized some of the code and catch blocks.
+- Cleaned up some of the verbose output.
+- Removed some redundant code.
+- Both the script and executable work with the latest versions of the Insider's Update (RS4).
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.4.6 ##
 
 - Added additional error-catching.
