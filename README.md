@@ -24,8 +24,8 @@
 - Exports the new Windows 10 Pro for Workstations WIM and EI.CFG to the user's desktop or the specified SavePath.
 
 # How is the executable version different from the script version?
-- The executable uses C# code, which utilizes the WimGapi.dll, to natively access the WIM file's handle where it can access the XMDocument metadata. This metadata is then retrieved and set using a PowerShell function wrapper.
-- Simply drag and drop a WIM file or ISO onto the .EXE to begin the conversion process.
+- The executable uses C# code, utilizing the WimGapi.dll and a safe-handle class, to natively access the WIM file's handle where it can access and retrieve the XML metadata of the image. This metadata's XMDocument representation is then edited and adjusted using a PowerShell function wrapper.
+- It supports drag and drop of a WIM file or an ISO file onto the .EXE, which will automatically begin the conversion process.
 
 # Requirements
-- Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index), that contains Windows 10 Home (Core).
+- Windows 10 Home RS3-RS4 ISO media, or an install.wim (All-in-One or Single-Index) that contains Windows 10 Home (Core).
