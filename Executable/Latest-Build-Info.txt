@@ -1,3 +1,11 @@
+## 2.0.1.6 ##
+
+- The executable now logs all processes and adds the final log file to the destination directory upon completion of the conversion.
+- A listbox is displayed before the initialization process begins (at the beginning of the conversion process) where one can choose the final compression type of the converted image. The reason for the change is to populate dynamic variables prior to the actuall conversion processes.
+- WimGapi now "follows" all image processes to ensure complete integrity during the conversion.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.4 ##
 
 - Cleaned up the output quite a bit and eliminated insignificant verbosity being returned to the console.
