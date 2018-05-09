@@ -1,3 +1,9 @@
+## 2.0.1.7 ##
+
+- Updated the P/Invoke C# method used with WimGapi.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.6 ##
 
 - The executable now logs all processes and adds the final log file to the destination directory upon completion of the conversion.
