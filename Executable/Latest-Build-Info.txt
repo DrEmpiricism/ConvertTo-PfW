@@ -1,7 +1,9 @@
-## 2.0.1.8 ##
+## 2.0.1.9 ##
 
 - Corrected the name of the log-file (originally was ConverTo-PfW instead of ConvertTo-Pfw).
 - Added additional error-handeling.
+- Removed "None" as a compression type.
+- The Recycle Bin within the image is cleared after the edition is changed.
 
 --------------------------------------------------------------------------------------------------------------------------------
 
