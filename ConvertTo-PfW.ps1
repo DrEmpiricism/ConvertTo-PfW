@@ -26,8 +26,8 @@
 		Created on:   	11/30/2017
 		Created by:     BenTheGreat
 		Filename:     	ConvertTo-PfW.ps1
-		Version:        2.4.8
-		Last updated:	05/08/2018
+		Version:        2.4.9
+		Last updated:	06/13/2018
 		===========================================================================
 #>
 [CmdletBinding()]
@@ -58,6 +58,7 @@ $Host.UI.RawUI.WindowTitle = "Converting image."
 $Host.UI.RawUI.BackgroundColor = "Black"; Clear-Host
 $ProgressPreference = "SilentlyContinue"
 $Desktop = [Environment]::GetFolderPath("Desktop")
+$TempPath = [System.IO.Path]::GetTempPath()
 
 #region Helper Functions
 Function Test-Admin
@@ -70,33 +71,29 @@ Function Test-Admin
 
 Function New-WorkDirectory
 {
-	$WorkDir = [System.IO.Path]::GetTempPath()
-	$WorkDir = [System.IO.Path]::Combine($WorkDir, [System.Guid]::NewGuid())
-	[void][System.IO.Directory]::CreateDirectory($WorkDir)
+	$WorkDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $Env:TEMP -ChildPath "WorkTemp_$(Get-Random)"))
+	$WorkDir = Get-Item -LiteralPath "$Env:TEMP\$WorkDir" -Force
 	$WorkDir
 }
 
-Function New-TempDirectory
+Function New-ScratchDirectory
 {
-	$TempDir = [System.IO.Path]::GetTempPath()
-	$TempDir = [System.IO.Path]::Combine($TempDir, [System.Guid]::NewGuid())
-	[void][System.IO.Directory]::CreateDirectory($TempDir)
-	$TempDir
+	$ScratchDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $Env:TEMP -ChildPath "ScratchTemp_$(Get-Random)"))
+	$ScratchDir = Get-Item -LiteralPath "$Env:TEMP\$ScratchDir" -Force
+	$ScratchDir
 }
 
 Function New-ImageDirectory
 {
-	$ImageDir = [System.IO.Path]::GetTempPath()
-	$ImageDir = [System.IO.Path]::Combine($ImageDir, [System.Guid]::NewGuid())
-	[void][System.IO.Directory]::CreateDirectory($ImageDir)
+	$ImageDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $Env:TEMP -ChildPath "ImageTemp_$(Get-Random)"))
+	$ImageDir = Get-Item -LiteralPath "$Env:TEMP\$ImageDir" -Force
 	$ImageDir
 }
 
 Function New-MountDirectory
 {
-	$MountDir = [System.IO.Path]::GetTempPath()
-	$MountDir = [System.IO.Path]::Combine($MountDir, [System.Guid]::NewGuid())
-	[void][System.IO.Directory]::CreateDirectory($MountDir)
+	$MountDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $Env:TEMP -ChildPath "MountTemp_$(Get-Random)"))
+	$MountDir = Get-Item -LiteralPath "$Env:TEMP\$MountDir" -Force
 	$MountDir
 }
 
@@ -104,27 +101,27 @@ Function New-SaveDirectory
 {
 	If (!$SavePath)
 	{
-		New-Item -Path $Desktop\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]" -ItemType Directory
+		$SaveDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $Desktop -ChildPath ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"))
+		$SaveDir = Get-Item -LiteralPath "$Desktop\$SaveDir"
+		$SaveDir
 	}
 	Else
 	{
-		New-Item -Path $SavePath\ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]" -ItemType Directory
+		$SaveDir = [System.IO.Directory]::CreateDirectory((Join-Path -Path $SavePath -ChildPath ConvertTo-PfW"-[$((Get-Date).ToString('MM.dd.yy hh.mm.ss'))]"))
+		$SaveDir = Get-Item -LiteralPath "$SavePath\$SaveDir"
+		$SaveDir
 	}
 }
 #endregion Helper Functions
 
-If (!(Test-Admin))
-{
-	Write-Error "This script requires administrative permissions."
-	Break
-}
+If (!(Test-Admin)) { Write-Error "This script requires administrative permissions."; Break }
 
 Try
 {
 	If ((Test-Path -Path "$PSScriptRoot\Bin\wimlib-imagex.exe") -and (Test-Path -Path "$PSScriptRoot\Bin\libwim-15.dll"))
 	{
-		Copy-Item -Path "$PSScriptRoot\Bin\wimlib-imagex.exe" -Destination $Env:TEMP -Force
-		Copy-Item -Path "$PSScriptRoot\Bin\libwim-15.dll" -Destination $Env:TEMP -Force
+		Copy-Item -Path "$PSScriptRoot\Bin\wimlib-imagex.exe" -Destination $TempPath -Force
+		Copy-Item -Path "$PSScriptRoot\Bin\libwim-15.dll" -Destination $TempPath -Force
 		$Error.Clear()
 	}
 	Else
@@ -132,23 +129,11 @@ Try
 		If ((Test-Connection $Env:COMPUTERNAME -Quiet) -eq $true)
 		{
 			Write-Verbose "Wimlib not found. Requesting it from GitHub." -Verbose
-			[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-			$paramWebRequestDll = @{
-				Uri	     = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true"
-				OutFile	     = "$Env:TEMP\libwim-15.dll"
-				TimeoutSec   = 15
-				ErrorAction  = "Stop"
-			}
-			[void](Invoke-WebRequest @paramWebRequestDll)
-			$paramWebRequestExe = @{
-				Uri	     = "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true"
-				OutFile	     = "$Env:TEMP\wimlib-imagex.exe"
-				TimeoutSec   = 15
-				ErrorAction  = "Stop"
-			}
-			[void](Invoke-WebRequest @paramWebRequestExe)
-			Write-Output ''
+			[Net.ServicePointManager]::SecurityProtocol = "TLS12, TLS11, TLS"
+			[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/libwim-15.dll?raw=true" -OutFile "$TempPath\libwim-15.dll" -TimeoutSec 15 -ErrorAction Stop)
+			[void](Invoke-WebRequest -Uri "https://github.com/DrEmpiricism/ConvertTo-PfW/blob/master/Bin/wimlib-imagex.exe?raw=true" -OutFile "$TempPath\wimlib-imagex.exe" -TimeoutSec 15 -ErrorAction Stop)
 			$Error.Clear()
+			Write-Output ''
 		}
 		Else
 		{
@@ -168,20 +153,17 @@ Catch
 If (([IO.FileInfo]$SourcePath).Extension -eq ".ISO")
 {
 	$SourcePath = ([System.IO.Path]::ChangeExtension($SourcePath, ([System.IO.Path]::GetExtension($SourcePath)).ToString().ToLower()))
-	$ResolveISO = (Resolve-Path -Path $SourcePath).Path
+	$ResolveISO = (Resolve-Path -Path $SourcePath).ProviderPath
 	$MountISO = Mount-DiskImage -ImagePath $ResolveISO -StorageType ISO -PassThru
 	$DriveLetter = ($MountISO | Get-Volume).DriveLetter
 	$WIMFile = "$($DriveLetter):\sources\install.wim"
 	If (Test-Path -Path $WIMFile)
 	{
 		Write-Verbose "Copying the WIM from $(Split-Path -Path $ResolveISO -Leaf)" -Verbose
-		Copy-Item -Path $WIMFile -Destination $Env:TEMP\install.wim -Force
+		Copy-Item -Path $WIMFile -Destination "$TempPath\install.wim" -Force
 		Dismount-DiskImage -ImagePath $SourcePath -StorageType ISO
-		$WIMFile = Get-Item -Path $Env:TEMP\install.wim -Force
-		If ($WIMFile.IsReadOnly)
-		{
-			Set-ItemProperty -Path $WIMFile -Name IsReadOnly -Value $false
-		}
+		$WIMFile = Get-Item -Path "$TempPath\install.wim" -Force
+		Set-ItemProperty -Path $WIMFile -Name IsReadOnly -Value $false
 		$ImageIsCopied = $true
 	}
 	Else
@@ -193,77 +175,72 @@ If (([IO.FileInfo]$SourcePath).Extension -eq ".ISO")
 ElseIf (([IO.FileInfo]$SourcePath).Extension -eq ".WIM")
 {
 	$SourcePath = ([System.IO.Path]::ChangeExtension($SourcePath, ([System.IO.Path]::GetExtension($SourcePath)).ToString().ToLower()))
-	$ResolveWIM = (Resolve-Path -Path $SourcePath).Path
+	$ResolveWIM = (Resolve-Path -Path $SourcePath).ProviderPath
 	If (Test-Path -Path $ResolveWIM)
 	{
 		Write-Verbose "Copying the WIM from $(Split-Path -Path $ResolveWIM -Parent)" -Verbose
-		Copy-Item -Path $SourcePath -Destination $Env:TEMP\install.wim -Force
-		$WIMFile = Get-Item -Path $Env:TEMP\install.wim -Force
-		If ($WIMFile.IsReadOnly)
-		{
-			Set-ItemProperty -Path $WIMFile -Name IsReadOnly -Value $false
-		}
+		Copy-Item -Path $SourcePath -Destination "$TempPath\install.wim" -Force
+		$WIMFile = Get-Item -Path "$TempPath\install.wim" -Force
+		If ($WIMFile.IsReadOnly) { Set-ItemProperty -Path $WIMFile -Name IsReadOnly -Value $false }
 		$ImageIsCopied = $true
 	}
 }
 
 If ($ImageIsCopied.Equals($true))
 {
-	$CheckBuild = (Get-WindowsImage -ImagePath $WIMFile -Index 1)
-	If ($CheckBuild.Build -lt '16273')
+	$CheckBuild = (Get-WindowsImage -ImagePath $WIMFile -Index 1).Build
+	If ($CheckBuild -lt '16273')
 	{
 		Write-Output ''
-		Write-Error "The image build [$($CheckBuild.Build.ToString())] is not supported."
+		Write-Error "The image build [$($CheckBuild.ToString())] is not supported."
 		Break
 	}
 	Else
 	{
 		Write-Output ''
-		Write-Verbose "The image build [$($CheckBuild.Build.ToString())] is supported." -Verbose
+		Write-Output "The image build [$($CheckBuild.ToString())] is supported."
 		Start-Sleep 3
 		$BuildIsSupported = $true
 	}
 }
 
-If (($BuildIsSupported.Equals($true)) -and (Test-Path -Path $Env:TEMP\libwim-15.dll) -and (Test-Path -Path $Env:TEMP\wimlib-imagex.exe))
+If (($BuildIsSupported.Equals($true)) -and (Test-Path -Path "$TempPath\libwim-15.dll") -and (Test-Path -Path "$TempPath\wimlib-imagex.exe"))
 {
 	[void]($WorkFolder = New-WorkDirectory)
-	[void]($TempFolder = New-TempDirectory)
+	[void]($ScratchFolder = New-ScratchDirectory)
 	[void]($ImageFolder = New-ImageDirectory)
 	[void]($MountFolder = New-MountDirectory)
-	Move-Item -Path $Env:TEMP\install.wim -Destination $ImageFolder
-	Move-Item -Path $Env:TEMP\libwim-15.dll -Destination $ImageFolder
-	Move-Item -Path $Env:TEMP\wimlib-imagex.exe -Destination $ImageFolder
+	Move-Item -Path "$TempPath\install.wim" -Destination $ImageFolder
+	Move-Item -Path "$TempPath\libwim-15.dll" -Destination $ImageFolder
+	Move-Item -Path "$TempPath\wimlib-imagex.exe" -Destination $ImageFolder
 	$ImageFile = "$ImageFolder\install.wim"
 	$ImageX = "$ImageFolder\wimlib-imagex.exe"
-	$IndexImages = @("Windows 10 S", "Windows 10 S N", "Windows 10 Home N", "Windows 10 Home Single Language",
-		"Windows 10 Education", "Windows 10 Education N", "Windows 10 Pro", "Windows 10 Pro N")
+	$IndexImages = @("Windows 10 S", "Windows 10 S N", "Windows 10 Home N", "Windows 10 Home Single Language", "Windows 10 Education", "Windows 10 Education N", "Windows 10 Pro", "Windows 10 Pro N")
 	$HomeImage = "Windows 10 Home"
-	$ImageInfo = (Get-WindowsImage -ImagePath $ImageFile)
+	$ImageInfo = Get-WindowsImage -ImagePath $ImageFile
 }
 
-If (!($ImageInfo.ImageName.Contains($HomeImage)))
+If (!$ImageInfo.ImageName.Contains($HomeImage))
 {
 	Write-Output ''
 	Write-Error "$HomeImage not detected."
-	Remove-Item $TempFolder -Recurse -Force
+	Remove-Item $ScratchFolder -Recurse -Force
 	Remove-Item $ImageFolder -Recurse -Force
 	Remove-Item $MountFolder -Recurse -Force
 	Remove-Item $WorkFolder -Recurse -Force
 	Break
 }
-
-If ($ImageInfo.Count -gt '1' -and $ImageInfo.ImageName.Contains($HomeImage))
+ElseIf ($ImageInfo.ImageName.Contains($HomeImage) -and $ImageInfo.Count -gt 1)
 {
 	Write-Output ''
 	Write-Verbose "$HomeImage detected. Converting to a single-index image file." -Verbose
 	ForEach ($IndexImage In $IndexImages)
 	{
-		[void]($ImageInfo.Where{ $_.ImageName -contains $IndexImage } | Remove-WindowsImage -ImagePath $ImageFile -Name $IndexImage -ScratchDirectory $TempFolder)
+		[void]($ImageInfo.Where{ $_.ImageName -contains $IndexImage } | Remove-WindowsImage -ImagePath $ImageFile -Name $IndexImage -ScratchDirectory $ScratchFolder)
 	}
 	$Index = 1
 }
-ElseIf ($ImageInfo.Count.Equals(1) -and $ImageInfo.ImageName.Contains($HomeImage))
+ElseIf ($ImageInfo.ImageName.Contains($HomeImage) -and $ImageInfo.Count.Equals(1))
 {
 	Write-Output ''
 	Write-Verbose "$HomeImage detected." -Verbose
@@ -274,29 +251,29 @@ Try
 {
 	Write-Output ''
 	Write-Verbose "Mounting Image." -Verbose
-	[void](Mount-WindowsImage -ImagePath $ImageFile -Index $Index -Path $MountFolder -ScratchDirectory $TempFolder)
-	$HealthCheck = (Repair-WindowsImage -Path $MountFolder -CheckHealth -ScratchDirectory $TempFolder)
-	If ($HealthCheck.ImageHealthState -eq "Healthy")
+	[void](Mount-WindowsImage -ImagePath $ImageFile -Index $Index -Path $MountFolder -ScratchDirectory $ScratchFolder)
+	$HealthCheck = (Repair-WindowsImage -Path $MountFolder -CheckHealth -ScratchDirectory $ScratchFolder).ImageHealthState
+	If ($HealthCheck -eq "Healthy")
 	{
 		Write-Output ''
 		Write-Verbose "Changing Image Edition to Windows 10 Pro for Workstations." -Verbose
-		[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $TempFolder -ErrorAction Stop)
-		If (Test-Path -Path $MountFolder\Windows\Core.xml)
-		{
-			Remove-Item -Path $MountFolder\Windows\Core.xml -Force
-		}
+		[void](Set-WindowsEdition -Path $MountFolder -Edition "ProfessionalWorkstation" -ScratchDirectory $ScratchFolder -ErrorAction Stop)
+		If (Test-Path -Path "$MountFolder\Windows\Core.xml") { Remove-Item -Path "$MountFolder\Windows\Core.xml" -Force -ErrorAction SilentlyContinue }
 		Write-Output ''
 		Write-Verbose "Saving and Dismounting Image." -Verbose
-		[void](Dismount-WindowsImage -Path $MountFolder -Save -CheckIntegrity -ScratchDirectory $TempFolder)
+		$RecycleBin = "$MountFolder\" + '$Recycle.Bin'
+		If (Test-Path -Path $RecycleBin) { Remove-Item -Path $RecycleBin -Recurse -Force -Confirm:$false -ErrorAction SilentlyContinue }
+		If (Test-Path -Path "$MountFolder\PerfLogs") { Remove-Item -Path "$MountFolder\PerfLogs" -Recurse -Force -Confirm:$false -ErrorAction SilentlyContinue }
+		[void](Dismount-WindowsImage -Path $MountFolder -Save -CheckIntegrity -ScratchDirectory $ScratchFolder)
 	}
 	Else
 	{
 		Write-Output ''
 		Write-Error "The image has been flagged for corruption. Further servicing is required."
-		Remove-Item $TempFolder -Recurse -Force
-		Remove-Item $ImageFolder -Recurse -Force
-		Remove-Item $MountFolder -Recurse -Force
-		Remove-Item $WorkFolder -Recurse -Force
+		Remove-Item $ScratchFolder -Recurse -Force -ErrorAction SilentlyContinue
+		Remove-Item $ImageFolder -Recurse -Force -ErrorAction SilentlyContinue
+		Remove-Item $MountFolder -Recurse -Force -ErrorAction SilentlyContinue
+		Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
 		Break
 	}
 }
@@ -304,11 +281,11 @@ Catch
 {
 	Write-Output ''
 	Write-Error "An error occured changing the Image Edition. Dismounting and Discarding Image."
-	[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $TempFolder)
-	Remove-Item $TempFolder -Recurse -Force
-	Remove-Item $ImageFolder -Recurse -Force
-	Remove-Item $MountFolder -Recurse -Force
-	Remove-Item $WorkFolder -Recurse -Force
+	[void](Dismount-WindowsImage -Path $MountFolder -Discard -ScratchDirectory $ScratchFolder)
+	Remove-Item $ScratchFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $ImageFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $MountFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
 	Break
 }
 Finally
@@ -321,11 +298,7 @@ Try
 	Write-Output ''
 	Write-Verbose "Converting $HomeImage to Windows 10 Pro for Workstations." -Verbose
 	Start-Sleep 3
-	$paramConvert = @{
-		Command	     = ('CMD.EXE /C $ImageX info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"')
-		ErrorAction  = "Stop"
-	}
-	[void](Invoke-Expression @paramConvert)
+	[void](Invoke-Expression -Command ('CMD.EXE /C $ImageX info $ImageFile $Index "Windows 10 Pro for Workstations" "Windows 10 Pro for Workstations" --image-property DISPLAYNAME="Windows 10 Pro for Workstations" --image-property DISPLAYDESCRIPTION="Windows 10 Pro for Workstations" --image-property FLAGS="ProfessionalWorkstation"') -ErrorAction Stop)
 	$ConversionComplete = $true
 	Start-Sleep 3
 }
@@ -333,16 +306,16 @@ Catch
 {
 	Write-Output ''
 	Write-Error "Unable to convert $HomeImage to Windows 10 Pro for Workstations."
-	Remove-Item $TempFolder -Recurse -Force
-	Remove-Item $ImageFolder -Recurse -Force
-	Remove-Item $MountFolder -Recurse -Force
-	Remove-Item $WorkFolder -Recurse -Force
+	Remove-Item $ScratchFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $ImageFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $MountFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
 	Break
 }
 
 If ($ConversionComplete.Equals($true))
 {
-	$EICFG_STR = @'
+	$null = @'
 [EditionID]
 ProfessionalWorkstation
 
@@ -351,9 +324,7 @@ Retail
 
 [VL]
 0
-'@
-	$EICFG_PATH = Join-Path -Path $WorkFolder -ChildPath "EI.cfg"
-	Set-Content -Path $EICFG_PATH -Value $EICFG_STR -Force
+'@ | Out-File -FilePath "$WorkFolder\EI.cfg" -Force -ErrorAction SilentlyContinue
 }
 
 Try
@@ -362,21 +333,15 @@ Try
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations to an ESD file. This will take some time to complete." -Verbose
-		$paramExportESD = @{
-			Command	     = ('CMD.EXE /C $ImageX export $ImageFile $Index $WorkFolder\install.esd --solid --check')
-			ErrorAction  = "Stop"
-		}
-		[void](Invoke-Expression @paramExportESD)
+		[void](Invoke-Expression -Command ('CMD.EXE /C $ImageX export $ImageFile $Index "$WorkFolder\install.esd" --solid --check') -ErrorAction Stop)
+		Remove-Item -Path $ImageFile -Force
+		Rename-Item -Path "$WorkFolder\install.esd" -NewName install.wim -Force
 	}
 	Else
 	{
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations." -Verbose
-		$paramExportMaximum = @{
-			Command	     = ('CMD.EXE /C $ImageX export $ImageFile $Index $WorkFolder\install.wim --compress="LZX" --check')
-			ErrorAction  = "Stop"
-		}
-		[void](Invoke-Expression @paramExportMaximum)
+		[void](Invoke-Expression -Command ('CMD.EXE /C $ImageX export $ImageFile $Index "$WorkFolder\install.wim" --compress="LZX" --check') -ErrorAction Stop)
 	}
 }
 Catch
@@ -387,25 +352,24 @@ Catch
 }
 Finally
 {
-	$SaveFolder = New-SaveDirectory
-	Move-Item -Path $WorkFolder\install.wim -Destination $SaveFolder -Force
-	Move-Item -Path $WorkFolder\*.cfg -Destination $SaveFolder -Force
-	Remove-Item $TempFolder -Recurse -Force
-	Remove-Item $ImageFolder -Recurse -Force
-	Remove-Item $MountFolder -Recurse -Force
-	Remove-Item $WorkFolder -Recurse -Force
+	[void]($SaveFolder = New-SaveDirectory)
+	Move-Item -Path "$WorkFolder\install.wim" -Destination $SaveFolder -Force
+	Move-Item -Path "$WorkFolder\*.cfg" -Destination $SaveFolder -Force
+	Remove-Item $ScratchFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $ImageFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $MountFolder -Recurse -Force -ErrorAction SilentlyContinue
+	Remove-Item $WorkFolder -Recurse -Force -ErrorAction SilentlyContinue
 	Write-Output ''
 	Write-Output "Windows 10 Pro for Workstations saved to: $($SaveFolder.Name)"
-	Start-Sleep 3
-	Write-Output ''
 	Write-Verbose "Full image conversion has completed with [$($Error.Count)] errors." -Verbose
 	Write-Output ''
+	Start-Sleep 3
 }
 # SIG # Begin signature block
 # MIIMJgYJKoZIhvcNAQcCoIIMFzCCDBMCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+umKZLomQsW3kqyxXNKATH9G
-# 9xegggj8MIIDfTCCAmWgAwIBAgIQfY66zkudTZ9EnV2nSZm8oDANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUw9MWNBhC6mR704ryqQ/CQQnv
+# CDqgggj8MIIDfTCCAmWgAwIBAgIQfY66zkudTZ9EnV2nSZm8oDANBgkqhkiG9w0B
 # AQsFADBFMRQwEgYKCZImiZPyLGQBGRYEVEVDSDEVMBMGCgmSJomT8ixkARkWBU9N
 # TklDMRYwFAYDVQQDEw1PTU5JQy5URUNILUNBMB4XDTE4MDMxMzIxNTY1OFoXDTIz
 # MDMxMzIyMDY1OFowRTEUMBIGCgmSJomT8ixkARkWBFRFQ0gxFTATBgoJkiaJk/Is
@@ -457,14 +421,14 @@ Finally
 # iZPyLGQBGRYFT01OSUMxFjAUBgNVBAMTDU9NTklDLlRFQ0gtQ0ECEyEAAAAFfOz8
 # 2RcyuMQAAAAAAAUwCQYFKw4DAhoFAKCCAQ0wGQYJKoZIhvcNAQkDMQwGCisGAQQB
 # gjcCAQQwHAYKKwYBBAGCNwIBCzEOMAwGCisGAQQBgjcCARUwIwYJKoZIhvcNAQkE
-# MRYEFEuUeBTsb1Rhs3ZGWZQ7DLaCTF0+MIGsBgorBgEEAYI3AgEMMYGdMIGaoIGX
+# MRYEFLozVNXKH+qQU3cJXZib+CRwhaE3MIGsBgorBgEEAYI3AgEMMYGdMIGaoIGX
 # gIGUAFcAaQBuAGQAbwB3AHMAIAAxADAAIABIAG8AbQBlACAAdABvACAAVwBpAG4A
 # ZABvAHcAcwAgADEAMAAgAFAAcgBvACAAZgBvAHIAIABXAG8AcgBrAHMAdABhAHQA
 # aQBvAG4AcwAgAGYAdQBsAGwAIABjAG8AbgB2AGUAcgBzAGkAbwBuACAAcwBjAHIA
-# aQBwAHQALjANBgkqhkiG9w0BAQEFAASCAQB4oVYlSRjMPACbMkeN8nXzdBurr9ys
-# doMweAcfDzptt6cVC7AAmdZudNOn0FdfwBaJ2TPhyQZ7XFGxMfbYGP7XDC9yj223
-# lbjC3MXJaWKD3hbj1V6ov1xxhabdkaX1YUP3dolLZd2N2xfp8o5qbBVquIvpuRwl
-# r6QJ8sdsQ7Sy+ebIa2S1QYScl63wZ/qhoT1pqZKKYTIjB0nDUYEVBQD71Jxu0Qxm
-# na2qw0FMwgNVWCSRucv8OQPFFQwM8yYC03CiEg/DYJF3P38z2CFlqv9ORtc1EBNK
-# dN9qNt0pokpEnTli5uTSZQumvzTT5oRgNF1kYHwez1i3m8Dun2LvHFUw
+# aQBwAHQALjANBgkqhkiG9w0BAQEFAASCAQB1F2eawZAp8NE8TsSIZdSv89oCvIaV
+# 3MRboXC6ZRnjMe/4p5CiT57QBp4O2M8T+IMHru1MfXhiijkebIGgKRKxfq5m8D8f
+# 0na3JRVyksR6xzRNJYj6DSyav+ZgUpVC/08VEWaxUo4O9WWcwTR0Pqb5ELB9PPFe
+# USyVcD5uJfWKkUFxLdjKem2SGHjrh+uruIUk1tNbqyyxMorpZ5tsxj4BG0IW+llm
+# jbfF21P4ByQvOuAlu7D7U4CloCfiVRsHIrg4aP8hRAOOZlaE3Il9ZWO/iZcTbZhl
+# RWwujn7Uv7uK/fB3LIrsCqRntCT3xhz727JGnenf5EOg+jytqIHD6kAf
 # SIG # End signature block
