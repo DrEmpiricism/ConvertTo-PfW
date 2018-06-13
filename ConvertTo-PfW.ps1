@@ -334,8 +334,6 @@ Try
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations to an ESD file. This will take some time to complete." -Verbose
 		[void](Invoke-Expression -Command ('CMD.EXE /C $ImageX export $ImageFile $Index "$WorkFolder\install.esd" --solid --check') -ErrorAction Stop)
-		Remove-Item -Path $ImageFile -Force
-		Rename-Item -Path "$WorkFolder\install.esd" -NewName install.wim -Force
 	}
 	Else
 	{
@@ -353,8 +351,9 @@ Catch
 Finally
 {
 	[void]($SaveFolder = New-SaveDirectory)
-	Move-Item -Path "$WorkFolder\install.wim" -Destination $SaveFolder -Force
-	Move-Item -Path "$WorkFolder\*.cfg" -Destination $SaveFolder -Force
+	If (Test-Path -Path "$WorkFolder\install.wim") { Move-Item -Path "$WorkFolder\install.wim" -Destination $SaveFolder -Force }
+	If (Test-Path -Path "$WorkFolder\install.esd") { Move-Item -Path "$WorkFolder\install.esd" -Destination $SaveFolder -Force }
+	Move-Item -Path "$WorkFolder\*.cfg" -Destination $SaveFolder -Force -ErrorAction SilentlyContinue
 	Remove-Item $ScratchFolder -Recurse -Force -ErrorAction SilentlyContinue
 	Remove-Item $ImageFolder -Recurse -Force -ErrorAction SilentlyContinue
 	Remove-Item $MountFolder -Recurse -Force -ErrorAction SilentlyContinue
