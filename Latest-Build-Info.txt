@@ -1,3 +1,12 @@
+## 2.4.9 ##
+
+- Optimized some of the code and removed some redundancies.
+- Updated the temporary folders' creation.
+- Removed some unnecessary variables.
+- Both the Recycle Bin and the PerfLogs' directories are cleared before dismounting the image.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.4.8 ##
 
 - Changed output verbosity to display only important information pertaining to the process being run.
