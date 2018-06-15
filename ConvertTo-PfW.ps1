@@ -334,6 +334,7 @@ Try
 		Write-Output ''
 		Write-Verbose "Exporting Windows 10 Pro for Workstations to an ESD file. This will take some time to complete." -Verbose
 		[void](Invoke-Expression -Command ('CMD.EXE /C $ImageX export $ImageFile $Index "$WorkFolder\install.esd" --solid --check') -ErrorAction Stop)
+		Remove-Item -Path $ImageFile -Force
 	}
 	Else
 	{
