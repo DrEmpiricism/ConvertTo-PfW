@@ -11,13 +11,12 @@
 - Let it run until completion.
 
 # How it works
-- If an Install.WIM is supplied, it will copy it to a temporary directory.
-- If an ISO is supplied, it will mount the ISO, copy the Install.WIM to a temporary directory, then dismount the ISO.
-- Detects the Windows 10 Home index image within the WIM.
-- Changes the WIM's Edition ID to Windows 10 Pro for Workstations.
+- Detects the Windows 10 Home index image within the supplied image.
+- Changes the Windows 10 Home Edition ID to Windows 10 Pro for Workstations.
 - Uses WimGapi and P/Invoke to natively access and retrieve the WIM's XMDocument metadata and then converts the default XML values to Windows 10 Pro for Workstations specific values.
 - Generates a Windows 10 Pro for Workstations EI.CFG.
 - Allows for ESD final image compression.
+- Exports the new Windows 10 Pro for Workstations WIM (or ESD) and EI.CFG to the desktop.
 
 # Requirements
-- Windows 10 Home Fall Creator's Update ISO media or Install.WIM (All-in-One or Single-Index).
+- Windows 10 ISO media or an install.wim (All-in-One or Single-Index) version 1709-1809+ (RS3-RS5)
