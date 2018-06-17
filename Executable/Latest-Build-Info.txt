@@ -1,3 +1,10 @@
+## 2.0.1.10 ##
+
+- Re-wrote many process blocks to improve speed.
+- Modified the final compression selection display.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.9 ##
 
 - Corrected the name of the log-file (originally was ConverTo-PfW instead of ConvertTo-Pfw).
