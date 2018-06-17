@@ -1,8 +1,6 @@
 # Overview
-- Legitimately converts Windows 10 Home to Windows 10 Pro for Workstations.
+- Legitimately converts Windows 10 Home version 1709+ to Windows 10 Pro for Workstations.
 - Does NOT perform any actions that are against Microsoft's Terms of Service or in any ways illegal.
-- Microsoft offers a free Media Creation Tool for v1709 that will download their Fall Creator's Update v1709.
-- There are other legitimate 3rd party sources where this media can also be obtained.
 
 # How to run the executable
 - Download the ConvertTo-PfW.exe.
