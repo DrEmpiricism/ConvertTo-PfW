@@ -1,5 +1,5 @@
 # Overview
-- Legitimately converts Windows 10 Home version 1709+ to Windows 10 Pro for Workstations.
+- Fully converts an ISO or WIM containing Windows 10 Home version 1709+ to a full Windows 10 Pro for Workstations image.
 - Does NOT perform any actions that are against Microsoft's Terms of Service or in any ways illegal.
 
 # How to run the executable
