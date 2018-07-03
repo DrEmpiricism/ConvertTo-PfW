@@ -1,3 +1,10 @@
+## 2.0.1.12 ##
+
+- All target editions available within the image being converted are now checked to ensure ProfessionalWorkstation is returned before continuing with the actual edition change.
+- Compression selection now occurs at the end of the conversion process as opposed to immediately at the beginning.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.11 ##
 
 - Fixed an incorrect dynamic variable.
