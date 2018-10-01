@@ -1,3 +1,10 @@
+## 2.0.1.15 ##
+
+- Incorporated better error-handling during the executable's initialization process.
+- Improved the image clean-up process before its dismount.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
 ## 2.0.1.12 ##
 
 - All target editions available within the image being converted are now checked to ensure ProfessionalWorkstation is returned before continuing with the actual edition change.
